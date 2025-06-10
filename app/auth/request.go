@@ -5,6 +5,7 @@ import z "github.com/Oudwins/zog"
 var loginSchema = z.Struct(z.Shape{
 	"email": z.String().
 		Required(z.Message("Email is required")).
+		Max(255, z.Message("Email max length is 255 characters")).
 		Email(z.Message("Email is not valid")),
 	"password": z.String().
 		Required(z.Message("Password is required")).
@@ -17,6 +18,7 @@ var registerSchema = z.Struct(z.Shape{
 		Max(255, z.Message("Name max length is 255 characters")),
 	"email": z.String().
 		Required(z.Message("Email is required")).
+		Max(255, z.Message("Email max length is 255 characters")).
 		Email(z.Message("Email is not valid")),
 	"password": z.String().
 		Required(z.Message("Password is required")).

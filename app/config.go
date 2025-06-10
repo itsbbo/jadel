@@ -11,12 +11,20 @@ type Config struct {
 	Server struct {
 		Port int `yaml:"port"`
 	} `yaml:"server"`
+	DB struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		Database string `yaml:"database"`
+		SSLMode  string `yaml:"sslmode"`
+	} `yaml:"db"`
 }
 
 func InitConfig(filepath string) (Config, error) {
 	var (
 		config Config
-	)	
+	)
 
 	_, err := os.Stat(filepath)
 	if err != nil {
@@ -39,6 +47,6 @@ func InitConfig(filepath string) (Config, error) {
 	if err != nil {
 		return config, err
 	}
-	
+
 	return config, nil
 }
