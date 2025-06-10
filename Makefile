@@ -19,5 +19,6 @@ migrate-new:
 	@sql-migrate new -config="config.yaml" -env="db" -seq $(name)
 
 migrate-redo:
+	@echo "Reapply last migration..."
 	@sql-migrate redo -config="config.yaml" -env="db" \
 		$(if $(dryrun), -dryrun)
