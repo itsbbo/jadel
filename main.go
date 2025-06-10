@@ -13,7 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	inertia, err := NewInertia()
+	inertia, err := app.NewInertia()
 	if err != nil {
 		panic(err)
 	}
