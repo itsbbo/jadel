@@ -112,7 +112,6 @@
             "@/*": ["./ui/js/*"],
         },
         "jsx": "react-jsx",
-        "types": ["vite/client"]
     },
     "include": [
         "ui/js/**/*.ts",
