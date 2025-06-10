@@ -5,7 +5,6 @@ import { FormEventHandler } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/shadcn/button';
-import { Checkbox } from '@/components/shadcn/checkbox';
 import { Input } from '@/components/shadcn/input';
 import { Label } from '@/components/shadcn/label';
 import AuthLayout from '@/layouts/auth-layout';
@@ -13,7 +12,6 @@ import AuthLayout from '@/layouts/auth-layout';
 type LoginForm = {
     email: string;
     password: string;
-    remember: boolean;
 };
 
 interface LoginProps {
@@ -25,7 +23,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
-        remember: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -77,17 +74,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             placeholder="Password"
                         />
                         <InputError message={errors.password} />
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                        <Checkbox
-                            id="remember"
-                            name="remember"
-                            checked={data.remember}
-                            onClick={() => setData('remember', !data.remember)}
-                            tabIndex={3}
-                        />
-                        <Label htmlFor="remember">Remember me</Label>
                     </div>
 
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>

@@ -20,6 +20,8 @@ func New(inertia *gonertia.Inertia, server *echo.Echo) *Deps {
 func (d *Deps) InitRoutes() {
 	group := d.server.Group("/auth")
 
-	group.GET("/register", d.RegisterUI)
-	group.GET("/login", d.LoginUI)
+	group.GET("/register", d.RegisterPage)
+	group.POST("/register", d.Register)
+	group.GET("/login", d.LoginPage)
+	group.POST("/login", d.Login)
 }
