@@ -16,9 +16,13 @@ migrate-down:
 		$(if $(dryrun), -dryrun)
 
 migrate-new:
-	@sql-migrate new -config="config.yaml" -env="db" -seq $(name)
+	@sql-migrate new -config="config.yaml" -env="db" $(name)
 
 migrate-redo:
 	@echo "Reapply last migration..."
 	@sql-migrate redo -config="config.yaml" -env="db" \
 		$(if $(dryrun), -dryrun)
+
+bob:
+	@echo "Running bob psql model codegen..."
+	@go run github.com/stephenafamo/bob/gen/bobgen-psql@latest

@@ -3,17 +3,20 @@ package auth
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/romsar/gonertia/v2"
+	"github.com/stephenafamo/bob/drivers/pgx"
 )
 
 type Deps struct {
 	inertia *gonertia.Inertia
 	server  *echo.Echo
+	db      pgx.Pool
 }
 
-func New(inertia *gonertia.Inertia, server *echo.Echo) *Deps {
+func New(inertia *gonertia.Inertia, server *echo.Echo, db pgx.Pool) *Deps {
 	return &Deps{
 		inertia: inertia,
 		server:  server,
+		db:      db,
 	}
 }
 

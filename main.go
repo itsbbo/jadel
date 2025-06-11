@@ -18,9 +18,16 @@ func main() {
 		panic(err)
 	}
 
+	database, err := app.NewPostgres(config)
+	if err != nil {
+		panic(err)
+	}
+
+	defer database.Close()
+
 	server := app.NewServer()
 
-	auth.New(inertia, server).InitRoutes()
+	auth.New(inertia, server, database).InitRoutes()
 
 	server.Start(fmt.Sprintf(":%d", config.Server.Port))
 }

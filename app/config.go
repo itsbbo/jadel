@@ -12,12 +12,14 @@ type Config struct {
 		Port int `yaml:"port"`
 	} `yaml:"server"`
 	DB struct {
-		Host     string `yaml:"host"`
-		Port     int    `yaml:"port"`
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-		Database string `yaml:"database"`
-		SSLMode  string `yaml:"sslmode"`
+		Host           string `yaml:"host"`
+		Port           int    `yaml:"port"`
+		Username       string `yaml:"username"`
+		Password       string `yaml:"password"`
+		Database       string `yaml:"database"`
+		SSLMode        string `yaml:"sslmode"`
+		DSN            string `yaml:"datasource"`
+		ConnectTimeout int    `yaml:"connect_timeout"`
 	} `yaml:"db"`
 }
 
