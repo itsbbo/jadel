@@ -19,23 +19,59 @@ import (
 )
 
 var TableNames = struct {
-	Migrations string
-	Sessions   string
-	Users      string
+	Migrations  string
+	PrivateKeys string
+	Projects    string
+	Servers     string
+	Sessions    string
+	Users       string
 }{
-	Migrations: "migrations",
-	Sessions:   "sessions",
-	Users:      "users",
+	Migrations:  "migrations",
+	PrivateKeys: "private_keys",
+	Projects:    "projects",
+	Servers:     "servers",
+	Sessions:    "sessions",
+	Users:       "users",
 }
 
 var ColumnNames = struct {
-	Migrations migrationColumnNames
-	Sessions   sessionColumnNames
-	Users      userColumnNames
+	Migrations  migrationColumnNames
+	PrivateKeys privateKeyColumnNames
+	Projects    projectColumnNames
+	Servers     serverColumnNames
+	Sessions    sessionColumnNames
+	Users       userColumnNames
 }{
 	Migrations: migrationColumnNames{
 		ID:        "id",
 		AppliedAt: "applied_at",
+	},
+	PrivateKeys: privateKeyColumnNames{
+		ID:           "id",
+		Name:         "name",
+		Description:  "description",
+		PrivateKey:   "private_key",
+		IsGitRelated: "is_git_related",
+		CreatedAt:    "created_at",
+		UpdatedAt:    "updated_at",
+	},
+	Projects: projectColumnNames{
+		ID:          "id",
+		Name:        "name",
+		Description: "description",
+		CreatedAt:   "created_at",
+		UpdatedAt:   "updated_at",
+	},
+	Servers: serverColumnNames{
+		ID:           "id",
+		Name:         "name",
+		Description:  "description",
+		IP:           "ip",
+		Port:         "port",
+		Username:     "username",
+		PrivateKeyID: "private_key_id",
+		CreatedAt:    "created_at",
+		UpdatedAt:    "updated_at",
 	},
 	Sessions: sessionColumnNames{
 		ID:        "id",
@@ -62,32 +98,45 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
-	Migrations migrationWhere[Q]
-	Sessions   sessionWhere[Q]
-	Users      userWhere[Q]
+	Migrations  migrationWhere[Q]
+	PrivateKeys privateKeyWhere[Q]
+	Projects    projectWhere[Q]
+	Servers     serverWhere[Q]
+	Sessions    sessionWhere[Q]
+	Users       userWhere[Q]
 } {
 	return struct {
-		Migrations migrationWhere[Q]
-		Sessions   sessionWhere[Q]
-		Users      userWhere[Q]
+		Migrations  migrationWhere[Q]
+		PrivateKeys privateKeyWhere[Q]
+		Projects    projectWhere[Q]
+		Servers     serverWhere[Q]
+		Sessions    sessionWhere[Q]
+		Users       userWhere[Q]
 	}{
-		Migrations: buildMigrationWhere[Q](MigrationColumns),
-		Sessions:   buildSessionWhere[Q](SessionColumns),
-		Users:      buildUserWhere[Q](UserColumns),
+		Migrations:  buildMigrationWhere[Q](MigrationColumns),
+		PrivateKeys: buildPrivateKeyWhere[Q](PrivateKeyColumns),
+		Projects:    buildProjectWhere[Q](ProjectColumns),
+		Servers:     buildServerWhere[Q](ServerColumns),
+		Sessions:    buildSessionWhere[Q](SessionColumns),
+		Users:       buildUserWhere[Q](UserColumns),
 	}
 }
 
 var Preload = getPreloaders()
 
 type preloaders struct {
-	Session sessionPreloader
-	User    userPreloader
+	PrivateKey privateKeyPreloader
+	Server     serverPreloader
+	Session    sessionPreloader
+	User       userPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
-		Session: buildSessionPreloader(),
-		User:    buildUserPreloader(),
+		PrivateKey: buildPrivateKeyPreloader(),
+		Server:     buildServerPreloader(),
+		Session:    buildSessionPreloader(),
+		User:       buildUserPreloader(),
 	}
 }
 
@@ -98,14 +147,18 @@ var (
 )
 
 type thenLoaders[Q orm.Loadable] struct {
-	Session sessionThenLoader[Q]
-	User    userThenLoader[Q]
+	PrivateKey privateKeyThenLoader[Q]
+	Server     serverThenLoader[Q]
+	Session    sessionThenLoader[Q]
+	User       userThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
-		Session: buildSessionThenLoader[Q](),
-		User:    buildUserThenLoader[Q](),
+		PrivateKey: buildPrivateKeyThenLoader[Q](),
+		Server:     buildServerThenLoader[Q](),
+		Session:    buildSessionThenLoader[Q](),
+		User:       buildUserThenLoader[Q](),
 	}
 }
 
@@ -150,8 +203,10 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 }
 
 type joins[Q dialect.Joinable] struct {
-	Sessions joinSet[sessionJoins[Q]]
-	Users    joinSet[userJoins[Q]]
+	PrivateKeys joinSet[privateKeyJoins[Q]]
+	Servers     joinSet[serverJoins[Q]]
+	Sessions    joinSet[sessionJoins[Q]]
+	Users       joinSet[userJoins[Q]]
 }
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
@@ -164,8 +219,10 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
-		Sessions: buildJoinSet[sessionJoins[Q]](SessionColumns, buildSessionJoins),
-		Users:    buildJoinSet[userJoins[Q]](UserColumns, buildUserJoins),
+		PrivateKeys: buildJoinSet[privateKeyJoins[Q]](PrivateKeyColumns, buildPrivateKeyJoins),
+		Servers:     buildJoinSet[serverJoins[Q]](ServerColumns, buildServerJoins),
+		Sessions:    buildJoinSet[sessionJoins[Q]](SessionColumns, buildSessionJoins),
+		Users:       buildJoinSet[userJoins[Q]](UserColumns, buildUserJoins),
 	}
 }
 
