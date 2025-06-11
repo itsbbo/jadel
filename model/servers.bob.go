@@ -28,7 +28,7 @@ type Server struct {
 	ID           ulid.ULID        `db:"id,pk" `
 	Name         string           `db:"name" `
 	Description  sql.Null[string] `db:"description" `
-	IP           pgtypes.Inet     `db:"ip" `
+	IP           string           `db:"ip" `
 	Port         int32            `db:"port" `
 	Username     string           `db:"username" `
 	PrivateKeyID ulid.ULID        `db:"private_key_id" `
@@ -107,7 +107,7 @@ type serverWhere[Q psql.Filterable] struct {
 	ID           psql.WhereMod[Q, ulid.ULID]
 	Name         psql.WhereMod[Q, string]
 	Description  psql.WhereNullMod[Q, string]
-	IP           psql.WhereMod[Q, pgtypes.Inet]
+	IP           psql.WhereMod[Q, string]
 	Port         psql.WhereMod[Q, int32]
 	Username     psql.WhereMod[Q, string]
 	PrivateKeyID psql.WhereMod[Q, ulid.ULID]
@@ -124,7 +124,7 @@ func buildServerWhere[Q psql.Filterable](cols serverColumns) serverWhere[Q] {
 		ID:           psql.Where[Q, ulid.ULID](cols.ID),
 		Name:         psql.Where[Q, string](cols.Name),
 		Description:  psql.WhereNull[Q, string](cols.Description),
-		IP:           psql.Where[Q, pgtypes.Inet](cols.IP),
+		IP:           psql.Where[Q, string](cols.IP),
 		Port:         psql.Where[Q, int32](cols.Port),
 		Username:     psql.Where[Q, string](cols.Username),
 		PrivateKeyID: psql.Where[Q, ulid.ULID](cols.PrivateKeyID),
@@ -153,7 +153,7 @@ type ServerSetter struct {
 	ID           *ulid.ULID        `db:"id,pk" `
 	Name         *string           `db:"name" `
 	Description  *sql.Null[string] `db:"description" `
-	IP           *pgtypes.Inet     `db:"ip" `
+	IP           *string           `db:"ip" `
 	Port         *int32            `db:"port" `
 	Username     *string           `db:"username" `
 	PrivateKeyID *ulid.ULID        `db:"private_key_id" `

@@ -11,6 +11,11 @@ replacements:
       db_type: bytea
     replace: ulid.ULID
 
+  - tables: [] # all tables
+    match:  
+      db_type: inet
+    replace: string
+
 psql:
   dsn: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
   driver: github.com/jackc/pgx/v5/stdlib

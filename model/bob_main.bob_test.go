@@ -10,7 +10,6 @@ import (
 	models "github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
 	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // Set the testDB to enable tests that use the database
@@ -39,9 +38,3 @@ var _ sql.Scanner = (*ulid.ULID)(nil)
 
 // Make sure the type ulid.ULID satisfies database/sql/driver.Valuer
 var _ driver.Valuer = *new(ulid.ULID)
-
-// Make sure the type pgtypes.Inet satisfies database/sql.Scanner
-var _ sql.Scanner = (*pgtypes.Inet)(nil)
-
-// Make sure the type pgtypes.Inet satisfies database/sql/driver.Valuer
-var _ driver.Valuer = *new(pgtypes.Inet)
