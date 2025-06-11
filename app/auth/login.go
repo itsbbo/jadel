@@ -1,8 +1,9 @@
 package auth
 
 import (
+	"net/http"
+
 	"github.com/itsbbo/jadel/app"
-	"github.com/labstack/echo/v4"
 )
 
 type LoginRequest struct {
@@ -10,20 +11,15 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (d *Deps) LoginPage(c echo.Context) error {
-	return d.inertia.Render(c.Response().Writer, c.Request(), "auth/login")
+func (d *Deps) LoginPage(w http.ResponseWriter, r *http.Request) {
+	d.server.RenderUI(w, r, "auth/login", app.NoUIProps)
 }
 
-func (d *Deps) Login(c echo.Context) error {
+func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 	var request LoginRequest
-	if err := c.Bind(&request); err != nil {
-		return err
-	}
 
-	if errs := loginSchema.Validate(&request); errs != nil {
-		app.SetInertiaValidationErrorsZog(c, errs)
-		return d.LoginPage(c)
+	ok := d.server.BindJSON(w, r, loginSchema, &request)
+	if !ok {
+		return
 	}
-
-	return nil
 }

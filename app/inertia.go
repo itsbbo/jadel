@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/romsar/gonertia/v2"
+	"github.com/samber/oops"
 )
 
 func ProjectRoot() string {
@@ -43,7 +44,7 @@ func NewInertia() (*gonertia.Inertia, error) {
 	// check if laravel-vite-plugin is running in dev mode (it puts a "hot" file in the public folder)
 	url, err := viteHotFileUrl(viteHotFile)
 	if err != nil {
-		return nil, err
+		return nil, oops.In("NewInertia").Errorf("cannot get vite hot file url: %w", err)
 	}
 
 	if url != "" {
@@ -55,16 +56,16 @@ func NewInertia() (*gonertia.Inertia, error) {
 		gonertia.WithVersionFromFile(manifestPath),
 	)
 	if err != nil {
-		return nil, err
+		return nil, oops.In("NewInertia").Errorf("cannot create new inertia: %w", err)
 	}
 
 	viteFn, err := vite(manifestPath, "/public/build/")
 	if err != nil {
-		return nil, err
+		return nil, oops.In("NewInertia").Errorf("cannot create vite function: %w", err)
 	}
 
 	i.ShareTemplateFunc("vite", viteFn)
-	i.ShareTemplateFunc("viteReactRefresh", func () (template.HTML, error) {
+	i.ShareTemplateFunc("viteReactRefresh", func() (template.HTML, error) {
 		return "", nil
 	})
 
@@ -152,7 +153,7 @@ func vite(manifestPath, buildDir string) (func(path string) (template.HTML, erro
 
 	return func(p string) (template.HTML, error) {
 		htmlStr := `<script type="module" src="%s"></script>`
-		
+
 		if val, ok := viteAssets[p]; ok {
 			tag := fmt.Sprintf(htmlStr, path.Join("/", buildDir, val.File))
 			return template.HTML(tag), nil

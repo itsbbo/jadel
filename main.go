@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"net/http"
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/app/auth"
+	"github.com/itsbbo/jadel/app/repo"
 )
 
 func main() {
@@ -25,9 +28,16 @@ func main() {
 
 	defer database.Close()
 
-	server := app.NewServer()
+	authRepo := repo.NewAuth(database)
+	server := app.NewServer(config, inertia)
 
-	auth.New(inertia, server, database).InitRoutes()
+	auth.New(server, authRepo).InitRoutes()
 
-	server.Start(fmt.Sprintf(":%d", config.Server.Port))
+	if config.Debug {
+		server.PrintRoutes()
+	}
+
+	slog.Info("Server Running", slog.Int("port", config.Server.Port))
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Server.Port), server)
+	slog.Info("Server stopped")
 }

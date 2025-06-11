@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/romsar/gonertia/v2"
+	"github.com/go-chi/chi/v5"
+	"github.com/itsbbo/jadel/app"
 )
 
 type Repository interface {
@@ -10,24 +10,22 @@ type Repository interface {
 }
 
 type Deps struct {
-	inertia *gonertia.Inertia
-	server  *echo.Echo
-	repo    Repository
+	server *app.Server
+	repo   Repository
 }
 
-func New(inertia *gonertia.Inertia, server *echo.Echo, repo Repository) *Deps {
+func New(server *app.Server, repo Repository) *Deps {
 	return &Deps{
-		inertia: inertia,
-		server:  server,
-		repo:    repo,
+		server: server,
+		repo:   repo,
 	}
 }
 
 func (d *Deps) InitRoutes() {
-	group := d.server.Group("/auth")
-
-	group.GET("/register", d.RegisterPage)
-	group.POST("/register", d.Register)
-	group.GET("/login", d.LoginPage)
-	group.POST("/login", d.Login)
+	d.server.Route("/auth", func(r chi.Router) {
+		r.Get("/register", d.RegisterPage)
+		r.Post("/register", d.Register)
+		r.Get("/login", d.LoginPage)
+		r.Post("/login", d.Login)
+	})
 }

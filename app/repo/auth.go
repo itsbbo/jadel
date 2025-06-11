@@ -8,11 +8,15 @@ import (
 	"github.com/itsbbo/jadel/app/auth"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
-	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/drivers/pgx"
 )
 
 type Auth struct {
-	db bob.DB
+	db pgx.Pool
+}
+
+func NewAuth(db pgx.Pool) *Auth {
+	return &Auth{db: db}
 }
 
 func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSessionParam) (*model.User, string, error) {

@@ -2,19 +2,20 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/model"
-	"github.com/labstack/echo/v4"
 )
 
 type RegisterRequest struct {
 	Name                 string `json:"name"`
 	Email                string `json:"email"`
 	Password             string `json:"password"`
-	ConfirmationPassword string `json:"confirmationPassword"`
+	PasswordConfirmation string `json:"passwordConfirmation"`
 }
 
 type NewUserWithSessionParam struct {
@@ -29,47 +30,48 @@ type NewUserWithSessionMutator interface {
 	NewUserWithSession(context.Context, NewUserWithSessionParam) (*model.User, string, error)
 }
 
-func (d *Deps) RegisterPage(c echo.Context) error {
-	return d.inertia.Render(c.Response().Writer, c.Request(), "auth/register")
+func (d *Deps) RegisterPage(w http.ResponseWriter, r *http.Request) {
+	d.server.RenderUI(w, r, "auth/register", app.NoUIProps)
 }
 
-func (d *Deps) Register(c echo.Context) error {
+func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	var request RegisterRequest
-	if err := c.Bind(&request); err != nil {
-		return err
+	ok := d.server.BindJSON(w, r, registerSchema, &request)
+	if !ok {
+		return
 	}
 
-	if errs := registerSchema.Validate(&request); errs != nil {
-		app.SetInertiaValidationErrorsZog(c, errs)
-		return d.RegisterPage(c)
-	}
-
-	if request.Password != request.ConfirmationPassword {
-		app.SetInertiaValidationErrorsMap(c, map[string]string{
+	if request.Password != request.PasswordConfirmation {
+		d.server.AddValidationErrors(w, r, map[string]string{
 			"passwordConfirmation": "Password input do not match the confirmation password.",
 		})
-
-		return d.RegisterPage(c)
+		d.RegisterPage(w, r)
+		return
 	}
 
-	_, session, err := d.repo.NewUserWithSession(c.Request().Context(), NewUserWithSessionParam{
+	_, session, err := d.repo.NewUserWithSession(r.Context(), NewUserWithSessionParam{
 		Name:      request.Name,
 		Email:     request.Email,
 		Password:  request.Password,
-		IPAddr:    c.RealIP(),
-		UserAgent: c.Request().UserAgent(),
+		IPAddr:    d.server.RealIP(r),
+		UserAgent: r.UserAgent(),
 	})
 
 	if err == nil {
-		c.SetCookie(&http.Cookie{
-			Name:    app.SessionKey,
-			Value:   session,
-			Expires: time.Now().Add(3 * time.Hour),
-		})
-
-		d.inertia.Redirect(c.Response(), c.Request(), "/dashboard")
-		return nil
+		d.server.SetCookie(w, app.SessionKey, session, 3*time.Hour)
+		d.server.RedirectTo(w, r, "/dashboard")
+		return
 	}
 
-	return err
+	if errors.Is(err, model.ErrUniqueConstraint) {
+		d.server.AddValidationErrors(w, r, map[string]string{
+			"email": "Email has already been taken.",
+		})
+		d.RegisterPage(w, r)
+		return
+	}
+
+	slog.Error("register failed", slog.Any("error", err))
+	d.server.AddInternalErrorMsg(w, r)
+	d.RegisterPage(w, r)
 }
