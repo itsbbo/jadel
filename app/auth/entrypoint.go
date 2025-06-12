@@ -7,6 +7,8 @@ import (
 
 type Repository interface {
 	NewUserWithSessionMutator
+	FindByEmailPasswordQuery
+	InsertSessionMutator
 }
 
 type Deps struct {

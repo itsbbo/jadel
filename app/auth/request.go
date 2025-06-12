@@ -23,7 +23,7 @@ var registerSchema = z.Struct(z.Shape{
 	"password": z.String().
 		Required(z.Message("Password is required")).
 		Min(8, z.Message("Password min length is 8 characters")).
-		Max(255, z.Message("Password max length is 255 characters")),
+		Max(50, z.Message("Password max length is 50 characters")),
 	"passwordConfirmation": z.String().
 		Required(z.Message("Password confirmation is required")).
 		Min(8, z.Message("Password confirmation min length is 8 characters")).

@@ -9,10 +9,9 @@ import (
 )
 
 type Config struct {
-	Debug bool `yaml:"debug"`
-
 	Server struct {
-		Port int `yaml:"port"`
+		Port  int  `yaml:"port"`
+		Debug bool `yaml:"debug"`
 	} `yaml:"server"`
 
 	DB struct {

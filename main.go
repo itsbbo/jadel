@@ -33,7 +33,7 @@ func main() {
 
 	auth.New(server, authRepo).InitRoutes()
 
-	if config.Debug {
+	if config.Server.Debug {
 		server.PrintRoutes()
 	}
 

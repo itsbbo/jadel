@@ -9,6 +9,7 @@ import (
 
 	models "github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
+	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 )
 
@@ -17,6 +18,12 @@ var testDB bob.Transactor
 
 // Make sure the type Migration runs hooks after queries
 var _ bob.HookableType = &models.Migration{}
+
+// Make sure the type PGStatStatement runs hooks after queries
+var _ bob.HookableType = &models.PGStatStatement{}
+
+// Make sure the type PGStatStatementsInfo runs hooks after queries
+var _ bob.HookableType = &models.PGStatStatementsInfo{}
 
 // Make sure the type PrivateKey runs hooks after queries
 var _ bob.HookableType = &models.PrivateKey{}
@@ -32,6 +39,12 @@ var _ bob.HookableType = &models.Session{}
 
 // Make sure the type User runs hooks after queries
 var _ bob.HookableType = &models.User{}
+
+// Make sure the type decimal.Decimal satisfies database/sql.Scanner
+var _ sql.Scanner = (*decimal.Decimal)(nil)
+
+// Make sure the type decimal.Decimal satisfies database/sql/driver.Valuer
+var _ driver.Valuer = *new(decimal.Decimal)
 
 // Make sure the type ulid.ULID satisfies database/sql.Scanner
 var _ sql.Scanner = (*ulid.ULID)(nil)

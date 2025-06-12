@@ -19,32 +19,93 @@ import (
 )
 
 var TableNames = struct {
-	Migrations  string
-	PrivateKeys string
-	Projects    string
-	Servers     string
-	Sessions    string
-	Users       string
+	Migrations            string
+	PGStatStatements      string
+	PGStatStatementsInfos string
+	PrivateKeys           string
+	Projects              string
+	Servers               string
+	Sessions              string
+	Users                 string
 }{
-	Migrations:  "migrations",
-	PrivateKeys: "private_keys",
-	Projects:    "projects",
-	Servers:     "servers",
-	Sessions:    "sessions",
-	Users:       "users",
+	Migrations:            "migrations",
+	PGStatStatements:      "pg_stat_statements",
+	PGStatStatementsInfos: "pg_stat_statements_info",
+	PrivateKeys:           "private_keys",
+	Projects:              "projects",
+	Servers:               "servers",
+	Sessions:              "sessions",
+	Users:                 "users",
 }
 
 var ColumnNames = struct {
-	Migrations  migrationColumnNames
-	PrivateKeys privateKeyColumnNames
-	Projects    projectColumnNames
-	Servers     serverColumnNames
-	Sessions    sessionColumnNames
-	Users       userColumnNames
+	Migrations            migrationColumnNames
+	PGStatStatements      pgStatStatementColumnNames
+	PGStatStatementsInfos pgStatStatementsInfoColumnNames
+	PrivateKeys           privateKeyColumnNames
+	Projects              projectColumnNames
+	Servers               serverColumnNames
+	Sessions              sessionColumnNames
+	Users                 userColumnNames
 }{
 	Migrations: migrationColumnNames{
 		ID:        "id",
 		AppliedAt: "applied_at",
+	},
+	PGStatStatements: pgStatStatementColumnNames{
+		Userid:               "userid",
+		Dbid:                 "dbid",
+		Toplevel:             "toplevel",
+		Queryid:              "queryid",
+		Query:                "query",
+		Plans:                "plans",
+		TotalPlanTime:        "total_plan_time",
+		MinPlanTime:          "min_plan_time",
+		MaxPlanTime:          "max_plan_time",
+		MeanPlanTime:         "mean_plan_time",
+		StddevPlanTime:       "stddev_plan_time",
+		Calls:                "calls",
+		TotalExecTime:        "total_exec_time",
+		MinExecTime:          "min_exec_time",
+		MaxExecTime:          "max_exec_time",
+		MeanExecTime:         "mean_exec_time",
+		StddevExecTime:       "stddev_exec_time",
+		Rows:                 "rows",
+		SharedBLKSHit:        "shared_blks_hit",
+		SharedBLKSRead:       "shared_blks_read",
+		SharedBLKSDirtied:    "shared_blks_dirtied",
+		SharedBLKSWritten:    "shared_blks_written",
+		LocalBLKSHit:         "local_blks_hit",
+		LocalBLKSRead:        "local_blks_read",
+		LocalBLKSDirtied:     "local_blks_dirtied",
+		LocalBLKSWritten:     "local_blks_written",
+		TempBLKSRead:         "temp_blks_read",
+		TempBLKSWritten:      "temp_blks_written",
+		SharedBLKReadTime:    "shared_blk_read_time",
+		SharedBLKWriteTime:   "shared_blk_write_time",
+		LocalBLKReadTime:     "local_blk_read_time",
+		LocalBLKWriteTime:    "local_blk_write_time",
+		TempBLKReadTime:      "temp_blk_read_time",
+		TempBLKWriteTime:     "temp_blk_write_time",
+		WalRecords:           "wal_records",
+		WalFpi:               "wal_fpi",
+		WalBytes:             "wal_bytes",
+		JitFunctions:         "jit_functions",
+		JitGenerationTime:    "jit_generation_time",
+		JitInliningCount:     "jit_inlining_count",
+		JitInliningTime:      "jit_inlining_time",
+		JitOptimizationCount: "jit_optimization_count",
+		JitOptimizationTime:  "jit_optimization_time",
+		JitEmissionCount:     "jit_emission_count",
+		JitEmissionTime:      "jit_emission_time",
+		JitDeformCount:       "jit_deform_count",
+		JitDeformTime:        "jit_deform_time",
+		StatsSince:           "stats_since",
+		MinmaxStatsSince:     "minmax_stats_since",
+	},
+	PGStatStatementsInfos: pgStatStatementsInfoColumnNames{
+		Dealloc:    "dealloc",
+		StatsReset: "stats_reset",
 	},
 	PrivateKeys: privateKeyColumnNames{
 		ID:           "id",
@@ -98,27 +159,33 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
-	Migrations  migrationWhere[Q]
-	PrivateKeys privateKeyWhere[Q]
-	Projects    projectWhere[Q]
-	Servers     serverWhere[Q]
-	Sessions    sessionWhere[Q]
-	Users       userWhere[Q]
+	Migrations            migrationWhere[Q]
+	PGStatStatements      pgStatStatementWhere[Q]
+	PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
+	PrivateKeys           privateKeyWhere[Q]
+	Projects              projectWhere[Q]
+	Servers               serverWhere[Q]
+	Sessions              sessionWhere[Q]
+	Users                 userWhere[Q]
 } {
 	return struct {
-		Migrations  migrationWhere[Q]
-		PrivateKeys privateKeyWhere[Q]
-		Projects    projectWhere[Q]
-		Servers     serverWhere[Q]
-		Sessions    sessionWhere[Q]
-		Users       userWhere[Q]
+		Migrations            migrationWhere[Q]
+		PGStatStatements      pgStatStatementWhere[Q]
+		PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
+		PrivateKeys           privateKeyWhere[Q]
+		Projects              projectWhere[Q]
+		Servers               serverWhere[Q]
+		Sessions              sessionWhere[Q]
+		Users                 userWhere[Q]
 	}{
-		Migrations:  buildMigrationWhere[Q](MigrationColumns),
-		PrivateKeys: buildPrivateKeyWhere[Q](PrivateKeyColumns),
-		Projects:    buildProjectWhere[Q](ProjectColumns),
-		Servers:     buildServerWhere[Q](ServerColumns),
-		Sessions:    buildSessionWhere[Q](SessionColumns),
-		Users:       buildUserWhere[Q](UserColumns),
+		Migrations:            buildMigrationWhere[Q](MigrationColumns),
+		PGStatStatements:      buildPGStatStatementWhere[Q](PGStatStatementColumns),
+		PGStatStatementsInfos: buildPGStatStatementsInfoWhere[Q](PGStatStatementsInfoColumns),
+		PrivateKeys:           buildPrivateKeyWhere[Q](PrivateKeyColumns),
+		Projects:              buildProjectWhere[Q](ProjectColumns),
+		Servers:               buildServerWhere[Q](ServerColumns),
+		Sessions:              buildSessionWhere[Q](SessionColumns),
+		Users:                 buildUserWhere[Q](UserColumns),
 	}
 }
 

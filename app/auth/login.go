@@ -1,14 +1,35 @@
 package auth
 
 import (
+	"context"
+	"crypto/rand"
 	"net/http"
+	"time"
 
 	"github.com/itsbbo/jadel/app"
+	"github.com/itsbbo/jadel/model"
+	"github.com/oklog/ulid/v2"
 )
 
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type InsertSessionParam struct {
+	UserID    ulid.ULID
+	SessionID string
+	Expires   time.Duration
+	IPAddr    string
+	UserAgent string
+}
+
+type FindByEmailPasswordQuery interface {
+	FindByEmailPassword(ctx context.Context, email string, password string) (*model.User, error)
+}
+
+type InsertSessionMutator interface {
+	InsertSession(ctx context.Context, param InsertSessionParam) error
 }
 
 func (d *Deps) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -22,4 +43,31 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	user, err := d.repo.FindByEmailPassword(r.Context(), request.Email, request.Password)
+	if err != nil {
+		d.server.AddValidationErrors(w, r, map[string]string{
+			"email":    "Email or password is incorrect.",
+			"password": "Email or password is incorrect.",
+		})
+		d.LoginPage(w, r)
+		return
+	}
+
+	sessionID := rand.Text()
+	err = d.repo.InsertSession(r.Context(), InsertSessionParam{
+		UserID:    user.ID,
+		SessionID: sessionID,
+		Expires:   3 * time.Hour,
+		IPAddr:    r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+	})
+	if err != nil {
+		d.server.AddInternalErrorMsg(w, r)
+		d.LoginPage(w, r)
+		return
+	}
+
+	d.server.SetCookie(w, app.SessionKey, sessionID, 3*time.Hour)
+	d.server.RedirectTo(w, r, "/dashboard")
 }

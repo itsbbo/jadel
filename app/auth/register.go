@@ -9,6 +9,7 @@ import (
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
@@ -52,7 +53,7 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	_, session, err := d.repo.NewUserWithSession(r.Context(), NewUserWithSessionParam{
 		Name:      request.Name,
 		Email:     request.Email,
-		Password:  request.Password,
+		Password:  hashPassword(request.Password),
 		IPAddr:    d.server.RealIP(r),
 		UserAgent: r.UserAgent(),
 	})
@@ -74,4 +75,9 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	slog.Error("register failed", slog.Any("error", err))
 	d.server.AddInternalErrorMsg(w, r)
 	d.RegisterPage(w, r)
+}
+
+func hashPassword(password string) string {
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hashedPassword)
 }
