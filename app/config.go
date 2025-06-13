@@ -10,8 +10,10 @@ import (
 
 type Config struct {
 	Server struct {
-		Port  int  `yaml:"port"`
-		Debug bool `yaml:"debug"`
+		Port    int    `yaml:"port"`
+		Timeout int    `yaml:"timeout"`
+		CSRFKey string `yaml:"csrf_key"`
+		Debug   bool   `yaml:"debug"`
 	} `yaml:"server"`
 
 	DB struct {

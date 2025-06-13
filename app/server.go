@@ -11,6 +11,7 @@ import (
 	"github.com/Oudwins/zog"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 	"github.com/romsar/gonertia/v2"
 )
 
@@ -80,6 +81,7 @@ func (s *Server) SetCookie(w http.ResponseWriter, key, val string, expiry time.D
 		SameSite: s.cookieSameSite,
 		Path:     s.cookiePath,
 		Domain:   s.cookieDomain,
+		HttpOnly: s.cookieHTTPOnly,
 		MaxAge:   int(expiry),
 	})
 }
@@ -124,10 +126,20 @@ func (s *Server) PrintRoutes() {
 func NewServer(c Config, inertia *gonertia.Inertia) *Server {
 	r := chi.NewRouter()
 
+	CSRF := csrf.Protect(
+		[]byte(c.Server.CSRFKey),
+		csrf.Domain(c.Cookie.Domain),
+		csrf.HttpOnly(c.Cookie.HTTPOnly),
+		csrf.Secure(c.Cookie.Secure),
+		csrf.CookieName(CSRFCookieName),
+		csrf.RequestHeader(CSRFHeaderName),
+	)
+
 	r.Use(
 		middleware.Recoverer,
 		middleware.RequestID,
 		middleware.RealIP,
+		CSRF,
 	)
 
 	var sameSite http.SameSite

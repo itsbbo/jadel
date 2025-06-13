@@ -1,8 +1,7 @@
 package app
 
 const (
-	// CSRFKey is the key used to store the CSRF token in context.
-	CSRFKey = "csrf"
-	// SessionKey is the key used to store the session in context.
+	CSRFCookieName = "XSRF-TOKEN"
+	CSRFHeaderName = "X-XSRF-TOKEN"
 	SessionKey = "jadel_session"
 )
