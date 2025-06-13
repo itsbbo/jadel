@@ -2,12 +2,12 @@ import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
+import InputError from '@/components/input-error';
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
 import { Label } from '@/components/shadcn/label';
-import AuthLayout from '@/layouts/auth-layout';
-import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
+import AuthLayout from '@/layouts/auth-layout';
 
 type RegisterForm = {
     name: string;
@@ -107,7 +107,7 @@ export default function Register() {
                     </Button>
                 </div>
 
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-center text-sm">
                     Already have an account?{' '}
                     <TextLink href="/auth/login" tabIndex={6}>
                         Log in

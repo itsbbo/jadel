@@ -164,6 +164,10 @@ func NewServer(c Config, inertia *gonertia.Inertia) *Server {
 		cookieSameSite: sameSite,
 	}
 
+	server.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		server.RenderUI(w, r, "error/not-found", NoUIProps)
+	})
+
 	server.AddStaticAssetsRoute()
 
 	return &server

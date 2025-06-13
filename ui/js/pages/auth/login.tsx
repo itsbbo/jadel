@@ -3,10 +3,10 @@ import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
 import { Label } from '@/components/shadcn/label';
+import TextLink from '@/components/text-link';
 import AuthLayout from '@/layouts/auth-layout';
 
 type LoginForm = {
@@ -27,7 +27,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post("/auth/login", {
+        post('/auth/login', {
             onFinish: () => reset('password'),
         });
     };
@@ -82,7 +82,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     </Button>
                 </div>
 
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-center text-sm">
                     Don't have an account?{' '}
                     <TextLink href="/auth/register" tabIndex={5}>
                         Sign up

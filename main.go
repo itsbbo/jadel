@@ -29,12 +29,15 @@ func main() {
 
 	defer database.Close()
 
-	authRepo := repo.NewAuth(database)
-	dashboardRepo := repo.NewDashboard(database)
 	server := app.NewServer(config, inertia)
 
-	auth.New(server, authRepo).InitRoutes()
-	dashboard.New(server, dashboardRepo).InitRoutes()
+	authRepo := repo.NewAuth(database)
+	dashboardRepo := repo.NewDashboard(database)
+
+	middleware := app.NewMiddleware(server, authRepo)
+
+	auth.New(server, middleware, authRepo).InitRoutes()
+	dashboard.New(server, middleware, dashboardRepo).InitRoutes()
 
 	if config.Server.Debug {
 		server.PrintRoutes()

@@ -8,7 +8,7 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children, title, description }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-0">
+        <div className="bg-background flex min-h-screen flex-col items-center justify-center p-4 sm:p-0">
             <Head title={title} />
             <div className="w-full max-w-md space-y-8">
                 <div className="text-center">

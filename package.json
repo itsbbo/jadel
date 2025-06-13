@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "format": "prettier --write ui/",
+    "format:check": "prettier --check ui/",
+    "lint": "eslint . --fix",
+    "types": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

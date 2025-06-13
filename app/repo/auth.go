@@ -3,10 +3,13 @@ package repo
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
+	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/app/auth"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
@@ -97,4 +100,24 @@ func (d *Auth) InsertSession(ctx context.Context, param auth.InsertSessionParam)
 	}).Exec(ctx, tx)
 
 	return tx.Commit(ctx)
+}
+
+func (d *Auth) FindUserBySession(ctx context.Context, sessionID string) (*model.User, error) {
+	user, err := model.Users.Query(
+		model.SelectJoins.Users.InnerJoin.Sessions,
+		model.SelectWhere.Sessions.ID.EQ(sessionID),
+	).One(ctx, d.db)
+
+	if err == nil {
+		return user, nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, app.ErrSessionNotFound
+	}
+
+	return user, oops.
+		In("FindUserBySession").
+		With("sessionID", sessionID).
+		Errorf("cannot find user by session id: %w", err)
 }

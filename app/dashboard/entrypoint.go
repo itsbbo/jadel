@@ -4,14 +4,16 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
 )
 
 type Deps struct {
-	server *app.Server
-	repo   Repository
+	server     *app.Server
+	middleware *app.Middleware
+	repo       Repository
 }
 
 type Repository interface {
@@ -19,12 +21,15 @@ type Repository interface {
 	GetFiveLatestServers(ctx context.Context) (model.ServerSlice, error)
 }
 
-func New(server *app.Server, repo Repository) *Deps {
-	return &Deps{server: server, repo: repo}
+func New(server *app.Server, middleware *app.Middleware, repo Repository) *Deps {
+	return &Deps{server: server, middleware: middleware, repo: repo}
 }
 
 func (d *Deps) InitRoutes() {
-	d.server.Get("/dashboard", d.DashboardUI)
+	d.server.Group(func(r chi.Router) {
+		r.Use(d.middleware.Auth)
+		r.Get("/dashboard", d.DashboardUI)
+	})
 }
 
 func (d *Deps) DashboardUI(w http.ResponseWriter, r *http.Request) {
