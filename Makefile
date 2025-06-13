@@ -15,6 +15,11 @@ migrate-down:
 		$(if $(limit), -limit $(limit)) \
 		$(if $(dryrun), -dryrun)
 
+migrate-reset:
+	@echo "Resetting database..."
+	@"$(MAKE)" migrate-down limit=0
+	@"$(MAKE)" migrate
+
 migrate-new:
 	@sql-migrate new -config="config.yaml" -env="db" $(name)
 
@@ -25,4 +30,4 @@ migrate-redo:
 
 bob:
 	@echo "Running bob psql model codegen..."
-	@go run github.com/stephenafamo/bob/gen/bobgen-psql@latest
+	@bobgen-psql.exe

@@ -7,6 +7,7 @@ import (
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/app/auth"
+	"github.com/itsbbo/jadel/app/dashboard"
 	"github.com/itsbbo/jadel/app/repo"
 )
 
@@ -29,9 +30,11 @@ func main() {
 	defer database.Close()
 
 	authRepo := repo.NewAuth(database)
+	dashboardRepo := repo.NewDashboard(database)
 	server := app.NewServer(config, inertia)
 
 	auth.New(server, authRepo).InitRoutes()
+	dashboard.New(server, dashboardRepo).InitRoutes()
 
 	if config.Server.Debug {
 		server.PrintRoutes()

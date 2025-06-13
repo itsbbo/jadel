@@ -46,7 +46,7 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 		d.server.AddValidationErrors(w, r, map[string]string{
 			"passwordConfirmation": "Password input do not match the confirmation password.",
 		})
-		d.RegisterPage(w, r)
+		d.server.Back(w, r)
 		return
 	}
 
@@ -68,13 +68,13 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 		d.server.AddValidationErrors(w, r, map[string]string{
 			"email": "Email has already been taken.",
 		})
-		d.RegisterPage(w, r)
+		d.server.Back(w, r)
 		return
 	}
 
 	slog.Error("register failed", slog.Any("error", err))
 	d.server.AddInternalErrorMsg(w, r)
-	d.RegisterPage(w, r)
+	d.server.Back(w, r)
 }
 
 func hashPassword(password string) string {

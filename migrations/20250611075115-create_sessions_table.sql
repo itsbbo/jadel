@@ -1,6 +1,6 @@
 -- +migrate Up
 create table sessions (
-    id char(24) not null primary key,
+    id varchar(100) not null primary key,
     user_id bytea not null references users(id),
     ip_address varchar(45),
     user_agent text,

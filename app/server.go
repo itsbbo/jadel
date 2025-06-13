@@ -92,6 +92,10 @@ func (s *Server) RedirectTo(w http.ResponseWriter, r *http.Request, path string)
 	s.inertia.Redirect(w, r, path)
 }
 
+func (s *Server) Back(w http.ResponseWriter, r *http.Request) {
+	s.inertia.Back(w, r)
+}
+
 func (Server) RealIP(r *http.Request) string {
 	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
 		if i := strings.Index(ip, ","); i != -1 {

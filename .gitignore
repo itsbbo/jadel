@@ -2,3 +2,4 @@
 /public/hot
 node_modules
 config.yaml
+bobgen-psql*

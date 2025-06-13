@@ -3,12 +3,14 @@ package repo
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"time"
 
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/itsbbo/jadel/app/auth"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
+	"github.com/samber/oops"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/drivers/pgx"
 )
@@ -29,34 +31,36 @@ func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSession
 
 	defer tx.Rollback(ctx)
 
-	userId := ulid.Make()
 	userSetter := model.UserSetter{
-		ID:       &userId,
-		Name:     &r.Name,
-		Email:    &r.Email,
-		Password: &r.Password,
+		ID:       omit.From(ulid.Make()),
+		Name:     omit.From(r.Name),
+		Email:    omit.From(r.Email),
+		Password: omit.From(r.Password),
 	}
 
 	user, err := model.Users.Insert(&userSetter).One(ctx, tx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", oops.In("model.Users.Insert").Errorf("failed to insert user: %w", err)
 	}
 
-	sessionID := rand.Text()
-	sessionsExpired := time.Now().Add(3 * time.Hour)
+	session, err := model.Sessions.Insert(&model.SessionSetter{
+		ID:        omit.From(rand.Text()),
+		UserID:    omit.From(user.ID),
+		IPAddress: omitnull.From(r.IPAddr),
+		UserAgent: omitnull.From(r.UserAgent),
+		ExpiredAt: omit.From(time.Now().Add(3 * time.Hour)),
+	}).One(ctx, tx)
 
-	user.InsertSessions(ctx, d.db, &model.SessionSetter{
-		ID:        &sessionID,
-		UserID:    &userId,
-		ExpiredAt: &sessionsExpired,
-	})
+	if err != nil {
+		return nil, "", oops.In("user.InsertSessions").Errorf("failed to insert user: %w", err)
+	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", oops.In("tx.Commit").Errorf("failed to commit transaction: %w", err)
 	}
 
-	return user, sessionID, nil
+	return user, session.ID, nil
 }
 
 func (d *Auth) FindByEmailPassword(ctx context.Context, email string, password string) (*model.User, error) {
@@ -83,22 +87,13 @@ func (d *Auth) InsertSession(ctx context.Context, param auth.InsertSessionParam)
 	defer tx.Rollback(ctx)
 
 	expiredAt := time.Now().Add(param.Expires)
-	ipaddr := sql.Null[string]{
-		V: param.IPAddr,
-		Valid: len(param.IPAddr) != 0,
-	}
-
-	userAgent := sql.Null[string]{
-		V: param.UserAgent,
-		Valid: len(param.UserAgent) != 0,
-	}
 
 	_, err = model.Sessions.Insert(&model.SessionSetter{
-		ID:        &param.SessionID,
-		UserID:    &param.UserID,
-		ExpiredAt: &expiredAt,
-		IPAddress: &ipaddr,
-		UserAgent: &userAgent,
+		ID:        omit.From(param.SessionID),
+		UserID:    omit.From(param.UserID),
+		ExpiredAt: omit.From(expiredAt),
+		IPAddress: omitnull.From(param.IPAddr),
+		UserAgent: omitnull.From(param.UserAgent),
 	}).Exec(ctx, tx)
 
 	return tx.Commit(ctx)

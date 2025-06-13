@@ -1,7 +1,5 @@
 no_factory: true
 
-type_system: github.com/aarondl/opt
-
 types:
   ulid.ULID:
     imports:
