@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/shadcn/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/shadcn/card';
-import { Link, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { AlertCircle, Home, RefreshCw } from 'lucide-react';
 
 export default function InternalServerError() {
@@ -12,6 +12,7 @@ export default function InternalServerError() {
 
     return (
         <div className="bg-background flex min-h-screen items-center justify-center p-4">
+            <Head title="Internal Server Error" />
             <Card className="mx-auto max-w-md text-center shadow-lg">
                 <CardHeader>
                     <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-50">

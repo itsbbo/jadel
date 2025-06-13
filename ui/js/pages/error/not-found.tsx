@@ -1,11 +1,12 @@
 import { Button } from '@/components/shadcn/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/shadcn/card';
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { FileQuestion, Home } from 'lucide-react';
 
 export default function NotFound() {
     return (
         <div className="bg-background flex min-h-screen items-center justify-center p-4">
+            <Head title="Page Not Found" />
             <Card className="mx-auto max-w-md text-center shadow-lg">
                 <CardHeader>
                     <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
