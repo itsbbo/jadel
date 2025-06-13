@@ -22,8 +22,8 @@ import (
 
 // Migration is an object representing the database table.
 type Migration struct {
-	ID        string              `db:"id,pk" `
-	AppliedAt null.Val[time.Time] `db:"applied_at" `
+	ID        string              `db:"id,pk" json:"id"`
+	AppliedAt null.Val[time.Time] `db:"applied_at" json:"applied_at"`
 }
 
 // MigrationSlice is an alias for a slice of pointers to Migration.
@@ -98,8 +98,8 @@ type migrationErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type MigrationSetter struct {
-	ID        omit.Val[string]        `db:"id,pk" `
-	AppliedAt omitnull.Val[time.Time] `db:"applied_at" `
+	ID        omit.Val[string]        `db:"id,pk" json:"id"`
+	AppliedAt omitnull.Val[time.Time] `db:"applied_at" json:"applied_at"`
 }
 
 func (s MigrationSetter) SetColumns() []string {

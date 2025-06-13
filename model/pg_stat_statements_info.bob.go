@@ -14,8 +14,8 @@ import (
 
 // PGStatStatementsInfo is an object representing the database table.
 type PGStatStatementsInfo struct {
-	Dealloc    null.Val[int64]     `db:"dealloc" `
-	StatsReset null.Val[time.Time] `db:"stats_reset" `
+	Dealloc    null.Val[int64]     `db:"dealloc" json:"dealloc"`
+	StatsReset null.Val[time.Time] `db:"stats_reset" json:"stats_reset"`
 }
 
 // PGStatStatementsInfoSlice is an alias for a slice of pointers to PGStatStatementsInfo.

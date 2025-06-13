@@ -27,15 +27,15 @@ import (
 
 // PrivateKey is an object representing the database table.
 type PrivateKey struct {
-	ID           ulid.ULID        `db:"id,pk" `
-	Name         string           `db:"name" `
-	Description  null.Val[string] `db:"description" `
-	PrivateKey   string           `db:"private_key" `
-	IsGitRelated bool             `db:"is_git_related" `
-	CreatedAt    time.Time        `db:"created_at" `
-	UpdatedAt    time.Time        `db:"updated_at" `
+	ID           ulid.ULID        `db:"id,pk" json:"id"`
+	Name         string           `db:"name" json:"name"`
+	Description  null.Val[string] `db:"description" json:"description"`
+	PrivateKey   string           `db:"private_key" json:"private_key"`
+	IsGitRelated bool             `db:"is_git_related" json:"is_git_related"`
+	CreatedAt    time.Time        `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time        `db:"updated_at" json:"updated_at"`
 
-	R privateKeyR `db:"-" `
+	R privateKeyR `db:"-" json:"-"`
 }
 
 // PrivateKeySlice is an alias for a slice of pointers to PrivateKey.
@@ -50,7 +50,7 @@ type PrivateKeysQuery = *psql.ViewQuery[*PrivateKey, PrivateKeySlice]
 
 // privateKeyR is where relationships are stored.
 type privateKeyR struct {
-	Servers ServerSlice // servers.servers_private_key_id_fkey
+	Servers ServerSlice `json:"Servers"` // servers.servers_private_key_id_fkey
 }
 
 type privateKeyColumnNames struct {
@@ -140,13 +140,13 @@ type privateKeyErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type PrivateKeySetter struct {
-	ID           omit.Val[ulid.ULID]  `db:"id,pk" `
-	Name         omit.Val[string]     `db:"name" `
-	Description  omitnull.Val[string] `db:"description" `
-	PrivateKey   omit.Val[string]     `db:"private_key" `
-	IsGitRelated omit.Val[bool]       `db:"is_git_related" `
-	CreatedAt    omit.Val[time.Time]  `db:"created_at" `
-	UpdatedAt    omit.Val[time.Time]  `db:"updated_at" `
+	ID           omit.Val[ulid.ULID]  `db:"id,pk" json:"id"`
+	Name         omit.Val[string]     `db:"name" json:"name"`
+	Description  omitnull.Val[string] `db:"description" json:"description"`
+	PrivateKey   omit.Val[string]     `db:"private_key" json:"private_key"`
+	IsGitRelated omit.Val[bool]       `db:"is_git_related" json:"is_git_related"`
+	CreatedAt    omit.Val[time.Time]  `db:"created_at" json:"created_at"`
+	UpdatedAt    omit.Val[time.Time]  `db:"updated_at" json:"updated_at"`
 }
 
 func (s PrivateKeySetter) SetColumns() []string {

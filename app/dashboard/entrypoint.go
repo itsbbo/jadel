@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/itsbbo/jadel/app"
+	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
-	"github.com/romsar/gonertia/v2"
 )
 
 type Deps struct {

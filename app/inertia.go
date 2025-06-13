@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/romsar/gonertia/v2"
+	"github.com/itsbbo/jadel/gonertia"
 	"github.com/samber/oops"
 )
 
@@ -51,47 +51,44 @@ func NewInertia() (*gonertia.Inertia, error) {
 		return newInertiaDevMode(rootViewFile, url)
 	}
 
-	i, err := gonertia.NewFromFile(
-		rootViewFile,
-		gonertia.WithVersionFromFile(manifestPath),
-	)
-	if err != nil {
-		return nil, oops.In("NewInertia").Errorf("cannot create new inertia: %w", err)
-	}
-
 	viteFn, err := vite(manifestPath, "/public/build/")
 	if err != nil {
 		return nil, oops.In("NewInertia").Errorf("cannot create vite function: %w", err)
 	}
 
-	i.ShareTemplateFunc("vite", viteFn)
-	i.ShareTemplateFunc("viteReactRefresh", func() (template.HTML, error) {
-		return "", nil
-	})
+	templateFn := gonertia.TemplateFuncs{
+		"vite":             viteFn,
+		"viteReactRefresh": func() (template.HTML, error) { return "", nil },
+	}
+
+	i, err := gonertia.NewFromFile(
+		rootViewFile,
+		gonertia.WithVersionFromFile(manifestPath),
+		gonertia.WithGlobalTemplateFuncs(templateFn),
+	)
+	if err != nil {
+		return nil, oops.In("NewInertia").Errorf("cannot create new inertia: %w", err)
+	}
 
 	return i, nil
 }
 
 func newInertiaDevMode(rootViewFile, url string) (*gonertia.Inertia, error) {
-	i, err := gonertia.NewFromFile(
-		rootViewFile,
-	)
-
-	if err != nil {
-		return nil, err
+	templateFn := gonertia.TemplateFuncs{
+		"vite": func(entry string) (template.HTML, error) {
+			if entry != "" && !strings.HasPrefix(entry, "/") {
+				entry = "/" + entry
+			}
+			htmlTag := fmt.Sprintf(`<script type="module" src="%s%s"></script>`, url, entry)
+			return template.HTML(htmlTag), nil
+		},
+		"viteReactRefresh": viteReactRefresh(url),
 	}
 
-	i.ShareTemplateFunc("vite", func(entry string) (template.HTML, error) {
-		if entry != "" && !strings.HasPrefix(entry, "/") {
-			entry = "/" + entry
-		}
-		htmlTag := fmt.Sprintf(`<script type="module" src="%s%s"></script>`, url, entry)
-		return template.HTML(htmlTag), nil
-	})
-
-	i.ShareTemplateFunc("viteReactRefresh", viteReactRefresh(url))
-
-	return i, nil
+	return gonertia.NewFromFile(
+		rootViewFile,
+		gonertia.WithGlobalTemplateFuncs(templateFn),
+	)
 }
 
 // viteHotFileUrl Get the vite hot file url

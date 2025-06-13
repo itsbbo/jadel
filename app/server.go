@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
-	"github.com/romsar/gonertia/v2"
+	"github.com/itsbbo/jadel/gonertia"
 )
 
 var NoUIProps = gonertia.Props{}

@@ -27,13 +27,13 @@ import (
 
 // Session is an object representing the database table.
 type Session struct {
-	ID        string           `db:"id,pk" `
-	UserID    ulid.ULID        `db:"user_id" `
-	IPAddress null.Val[string] `db:"ip_address" `
-	UserAgent null.Val[string] `db:"user_agent" `
-	ExpiredAt time.Time        `db:"expired_at" `
+	ID        string           `db:"id,pk" json:"id"`
+	UserID    ulid.ULID        `db:"user_id" json:"user_id"`
+	IPAddress null.Val[string] `db:"ip_address" json:"ip_address"`
+	UserAgent null.Val[string] `db:"user_agent" json:"user_agent"`
+	ExpiredAt time.Time        `db:"expired_at" json:"expired_at"`
 
-	R sessionR `db:"-" `
+	R sessionR `db:"-" json:"-"`
 }
 
 // SessionSlice is an alias for a slice of pointers to Session.
@@ -48,7 +48,7 @@ type SessionsQuery = *psql.ViewQuery[*Session, SessionSlice]
 
 // sessionR is where relationships are stored.
 type sessionR struct {
-	User *User // sessions.sessions_user_id_fkey
+	User *User `json:"User"` // sessions.sessions_user_id_fkey
 }
 
 type sessionColumnNames struct {
@@ -128,11 +128,11 @@ type sessionErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type SessionSetter struct {
-	ID        omit.Val[string]     `db:"id,pk" `
-	UserID    omit.Val[ulid.ULID]  `db:"user_id" `
-	IPAddress omitnull.Val[string] `db:"ip_address" `
-	UserAgent omitnull.Val[string] `db:"user_agent" `
-	ExpiredAt omit.Val[time.Time]  `db:"expired_at" `
+	ID        omit.Val[string]     `db:"id,pk" json:"id"`
+	UserID    omit.Val[ulid.ULID]  `db:"user_id" json:"user_id"`
+	IPAddress omitnull.Val[string] `db:"ip_address" json:"ip_address"`
+	UserAgent omitnull.Val[string] `db:"user_agent" json:"user_agent"`
+	ExpiredAt omit.Val[time.Time]  `db:"expired_at" json:"expired_at"`
 }
 
 func (s SessionSetter) SetColumns() []string {

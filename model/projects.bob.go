@@ -22,11 +22,11 @@ import (
 
 // Project is an object representing the database table.
 type Project struct {
-	ID          int32            `db:"id,pk" `
-	Name        string           `db:"name" `
-	Description null.Val[string] `db:"description" `
-	CreatedAt   time.Time        `db:"created_at" `
-	UpdatedAt   time.Time        `db:"updated_at" `
+	ID          int32            `db:"id,pk" json:"id"`
+	Name        string           `db:"name" json:"name"`
+	Description null.Val[string] `db:"description" json:"description"`
+	CreatedAt   time.Time        `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time        `db:"updated_at" json:"updated_at"`
 }
 
 // ProjectSlice is an alias for a slice of pointers to Project.
@@ -116,11 +116,11 @@ type projectErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type ProjectSetter struct {
-	ID          omit.Val[int32]      `db:"id,pk" `
-	Name        omit.Val[string]     `db:"name" `
-	Description omitnull.Val[string] `db:"description" `
-	CreatedAt   omit.Val[time.Time]  `db:"created_at" `
-	UpdatedAt   omit.Val[time.Time]  `db:"updated_at" `
+	ID          omit.Val[int32]      `db:"id,pk" json:"id"`
+	Name        omit.Val[string]     `db:"name" json:"name"`
+	Description omitnull.Val[string] `db:"description" json:"description"`
+	CreatedAt   omit.Val[time.Time]  `db:"created_at" json:"created_at"`
+	UpdatedAt   omit.Val[time.Time]  `db:"updated_at" json:"updated_at"`
 }
 
 func (s ProjectSetter) SetColumns() []string {

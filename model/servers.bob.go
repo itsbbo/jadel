@@ -27,17 +27,17 @@ import (
 
 // Server is an object representing the database table.
 type Server struct {
-	ID           ulid.ULID        `db:"id,pk" `
-	Name         string           `db:"name" `
-	Description  null.Val[string] `db:"description" `
-	IP           string           `db:"ip" `
-	Port         int32            `db:"port" `
-	Username     string           `db:"username" `
-	PrivateKeyID ulid.ULID        `db:"private_key_id" `
-	CreatedAt    time.Time        `db:"created_at" `
-	UpdatedAt    time.Time        `db:"updated_at" `
+	ID           ulid.ULID        `db:"id,pk" json:"id"`
+	Name         string           `db:"name" json:"name"`
+	Description  null.Val[string] `db:"description" json:"description"`
+	IP           string           `db:"ip" json:"ip"`
+	Port         int32            `db:"port" json:"port"`
+	Username     string           `db:"username" json:"username"`
+	PrivateKeyID ulid.ULID        `db:"private_key_id" json:"private_key_id"`
+	CreatedAt    time.Time        `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time        `db:"updated_at" json:"updated_at"`
 
-	R serverR `db:"-" `
+	R serverR `db:"-" json:"-"`
 }
 
 // ServerSlice is an alias for a slice of pointers to Server.
@@ -52,7 +52,7 @@ type ServersQuery = *psql.ViewQuery[*Server, ServerSlice]
 
 // serverR is where relationships are stored.
 type serverR struct {
-	PrivateKey *PrivateKey // servers.servers_private_key_id_fkey
+	PrivateKey *PrivateKey `json:"PrivateKey"` // servers.servers_private_key_id_fkey
 }
 
 type serverColumnNames struct {
@@ -152,15 +152,15 @@ type serverErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type ServerSetter struct {
-	ID           omit.Val[ulid.ULID]  `db:"id,pk" `
-	Name         omit.Val[string]     `db:"name" `
-	Description  omitnull.Val[string] `db:"description" `
-	IP           omit.Val[string]     `db:"ip" `
-	Port         omit.Val[int32]      `db:"port" `
-	Username     omit.Val[string]     `db:"username" `
-	PrivateKeyID omit.Val[ulid.ULID]  `db:"private_key_id" `
-	CreatedAt    omit.Val[time.Time]  `db:"created_at" `
-	UpdatedAt    omit.Val[time.Time]  `db:"updated_at" `
+	ID           omit.Val[ulid.ULID]  `db:"id,pk" json:"id"`
+	Name         omit.Val[string]     `db:"name" json:"name"`
+	Description  omitnull.Val[string] `db:"description" json:"description"`
+	IP           omit.Val[string]     `db:"ip" json:"ip"`
+	Port         omit.Val[int32]      `db:"port" json:"port"`
+	Username     omit.Val[string]     `db:"username" json:"username"`
+	PrivateKeyID omit.Val[ulid.ULID]  `db:"private_key_id" json:"private_key_id"`
+	CreatedAt    omit.Val[time.Time]  `db:"created_at" json:"created_at"`
+	UpdatedAt    omit.Val[time.Time]  `db:"updated_at" json:"updated_at"`
 }
 
 func (s ServerSetter) SetColumns() []string {

@@ -25,14 +25,14 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID        ulid.ULID `db:"id,pk" `
-	Name      string    `db:"name" `
-	Email     string    `db:"email" `
-	Password  string    `db:"password" `
-	CreatedAt time.Time `db:"created_at" `
-	UpdatedAt time.Time `db:"updated_at" `
+	ID        ulid.ULID `db:"id,pk" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	Email     string    `db:"email" json:"email"`
+	Password  string    `db:"password" json:"-"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
-	R userR `db:"-" `
+	R userR `db:"-" json:"-"`
 }
 
 // UserSlice is an alias for a slice of pointers to User.
@@ -47,7 +47,7 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 
 // userR is where relationships are stored.
 type userR struct {
-	Sessions SessionSlice // sessions.sessions_user_id_fkey
+	Sessions SessionSlice `json:"Sessions"` // sessions.sessions_user_id_fkey
 }
 
 type userColumnNames struct {
@@ -141,12 +141,12 @@ type userErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type UserSetter struct {
-	ID        omit.Val[ulid.ULID] `db:"id,pk" `
-	Name      omit.Val[string]    `db:"name" `
-	Email     omit.Val[string]    `db:"email" `
-	Password  omit.Val[string]    `db:"password" `
-	CreatedAt omit.Val[time.Time] `db:"created_at" `
-	UpdatedAt omit.Val[time.Time] `db:"updated_at" `
+	ID        omit.Val[ulid.ULID] `db:"id,pk" json:"id"`
+	Name      omit.Val[string]    `db:"name" json:"name"`
+	Email     omit.Val[string]    `db:"email" json:"email"`
+	Password  omit.Val[string]    `db:"password" json:"-"`
+	CreatedAt omit.Val[time.Time] `db:"created_at" json:"created_at"`
+	UpdatedAt omit.Val[time.Time] `db:"updated_at" json:"updated_at"`
 }
 
 func (s UserSetter) SetColumns() []string {

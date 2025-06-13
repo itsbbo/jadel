@@ -1,4 +1,6 @@
 no_factory: true
+tags: [json]
+tag_ignore: [password]
 
 types:
   ulid.ULID:
