@@ -47,7 +47,7 @@ func Test_setOf(t *testing.T) {
 	t.Run("strings", func(t *testing.T) {
 		t.Parallel()
 
-		got := setOf[string]([]string{"foo", "bar"})
+		got := setOf([]string{"foo", "bar"})
 		want := map[string]struct{}{
 			"foo": {},
 			"bar": {},
@@ -61,7 +61,7 @@ func Test_setOf(t *testing.T) {
 	t.Run("integers", func(t *testing.T) {
 		t.Parallel()
 
-		got := setOf[int]([]int{123, 456})
+		got := setOf([]int{123, 456})
 		want := map[int]struct{}{
 			123: {},
 			456: {},
@@ -105,7 +105,7 @@ func Test_firstOr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := firstOr[string](tt.items, tt.fallback)
+			got := firstOr(tt.items, tt.fallback)
 			if got != tt.want {
 				t.Fatalf("firstOr()=%s, want=%s", got, tt.want)
 			}

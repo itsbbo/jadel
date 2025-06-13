@@ -87,7 +87,7 @@ func ValidationErrorsFromContext(ctx context.Context) ValidationErrors {
 
 // SetEncryptHistory enables or disables history encryption.
 func SetEncryptHistory(ctx context.Context, encrypt ...bool) context.Context {
-	return context.WithValue(ctx, encryptHistoryContextKey, firstOr[bool](encrypt, true))
+	return context.WithValue(ctx, encryptHistoryContextKey, firstOr(encrypt, true))
 }
 
 // EncryptHistoryFromContext returns history encryption value from the context.
