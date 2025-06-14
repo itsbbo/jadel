@@ -20,7 +20,6 @@ migrate-reset:
 	@echo "Resetting database..."
 	@"$(MAKE)" migrate-down limit=0
 	@"$(MAKE)" migrate
-	@"$(MAKE)" bob
 
 migrate-new:
 	@sql-migrate new -config="config.yaml" -env="db" $(name)

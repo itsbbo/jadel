@@ -27,7 +27,7 @@ import (
 
 // Project is an object representing the database table.
 type Project struct {
-	ID          int32            `db:"id,pk" json:"id"`
+	ID          ulid.ULID        `db:"id,pk" json:"id"`
 	Name        string           `db:"name" json:"name"`
 	UserID      ulid.ULID        `db:"user_id" json:"user_id"`
 	Description null.Val[string] `db:"description" json:"description"`
@@ -49,7 +49,8 @@ type ProjectsQuery = *psql.ViewQuery[*Project, ProjectSlice]
 
 // projectR is where relationships are stored.
 type projectR struct {
-	User *User `json:"User"` // projects.projects_user_id_fkey
+	Environments EnvironmentSlice `json:"Environments"` // environments.environments_project_id_fkey
+	User         *User            `json:"User"`         // projects.projects_user_id_fkey
 }
 
 type projectColumnNames struct {
@@ -94,7 +95,7 @@ func buildProjectColumns(alias string) projectColumns {
 }
 
 type projectWhere[Q psql.Filterable] struct {
-	ID          psql.WhereMod[Q, int32]
+	ID          psql.WhereMod[Q, ulid.ULID]
 	Name        psql.WhereMod[Q, string]
 	UserID      psql.WhereMod[Q, ulid.ULID]
 	Description psql.WhereNullMod[Q, string]
@@ -108,7 +109,7 @@ func (projectWhere[Q]) AliasedAs(alias string) projectWhere[Q] {
 
 func buildProjectWhere[Q psql.Filterable](cols projectColumns) projectWhere[Q] {
 	return projectWhere[Q]{
-		ID:          psql.Where[Q, int32](cols.ID),
+		ID:          psql.Where[Q, ulid.ULID](cols.ID),
 		Name:        psql.Where[Q, string](cols.Name),
 		UserID:      psql.Where[Q, ulid.ULID](cols.UserID),
 		Description: psql.WhereNull[Q, string](cols.Description),
@@ -134,7 +135,7 @@ type projectErrors struct {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type ProjectSetter struct {
-	ID          omit.Val[int32]      `db:"id,pk" json:"id"`
+	ID          omit.Val[ulid.ULID]  `db:"id,pk" json:"id"`
 	Name        omit.Val[string]     `db:"name" json:"name"`
 	UserID      omit.Val[ulid.ULID]  `db:"user_id" json:"user_id"`
 	Description omitnull.Val[string] `db:"description" json:"description"`
@@ -287,7 +288,7 @@ func (s ProjectSetter) Expressions(prefix ...string) []bob.Expression {
 
 // FindProject retrieves a single record by primary key
 // If cols is empty Find will return all columns.
-func FindProject(ctx context.Context, exec bob.Executor, IDPK int32, cols ...string) (*Project, error) {
+func FindProject(ctx context.Context, exec bob.Executor, IDPK ulid.ULID, cols ...string) (*Project, error) {
 	if len(cols) == 0 {
 		return Projects.Query(
 			SelectWhere.Projects.ID.EQ(IDPK),
@@ -301,7 +302,7 @@ func FindProject(ctx context.Context, exec bob.Executor, IDPK int32, cols ...str
 }
 
 // ProjectExists checks the presence of a single record by primary key
-func ProjectExists(ctx context.Context, exec bob.Executor, IDPK int32) (bool, error) {
+func ProjectExists(ctx context.Context, exec bob.Executor, IDPK ulid.ULID) (bool, error) {
 	return Projects.Query(
 		SelectWhere.Projects.ID.EQ(IDPK),
 	).Exists(ctx, exec)
@@ -509,8 +510,9 @@ func (o ProjectSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 }
 
 type projectJoins[Q dialect.Joinable] struct {
-	typ  string
-	User modAs[Q, userColumns]
+	typ          string
+	Environments modAs[Q, environmentColumns]
+	User         modAs[Q, userColumns]
 }
 
 func (j projectJoins[Q]) aliasedAs(alias string) projectJoins[Q] {
@@ -520,6 +522,20 @@ func (j projectJoins[Q]) aliasedAs(alias string) projectJoins[Q] {
 func buildProjectJoins[Q dialect.Joinable](cols projectColumns, typ string) projectJoins[Q] {
 	return projectJoins[Q]{
 		typ: typ,
+		Environments: modAs[Q, environmentColumns]{
+			c: EnvironmentColumns,
+			f: func(to environmentColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Environments.Name().As(to.Alias())).On(
+						to.ProjectID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		User: modAs[Q, userColumns]{
 			c: UserColumns,
 			f: func(to userColumns) bob.Mod[Q] {
@@ -535,6 +551,27 @@ func buildProjectJoins[Q dialect.Joinable](cols projectColumns, typ string) proj
 			},
 		},
 	}
+}
+
+// Environments starts a query for related objects on environments
+func (o *Project) Environments(mods ...bob.Mod[*dialect.SelectQuery]) EnvironmentsQuery {
+	return Environments.Query(append(mods,
+		sm.Where(EnvironmentColumns.ProjectID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os ProjectSlice) Environments(mods ...bob.Mod[*dialect.SelectQuery]) EnvironmentsQuery {
+	pkID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkID[i] = o.ID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "bytea[]")),
+	))
+
+	return Environments.Query(append(mods,
+		sm.Where(psql.Group(EnvironmentColumns.ProjectID).OP("IN", PKArgExpr)),
+	)...)
 }
 
 // User starts a query for related objects on users
@@ -564,6 +601,20 @@ func (o *Project) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "Environments":
+		rels, ok := retrieved.(EnvironmentSlice)
+		if !ok {
+			return fmt.Errorf("project cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Environments = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Project = o
+			}
+		}
+		return nil
 	case "User":
 		rel, ok := retrieved.(*User)
 		if !ok {
@@ -608,15 +659,25 @@ func buildProjectPreloader() projectPreloader {
 }
 
 type projectThenLoader[Q orm.Loadable] struct {
-	User func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Environments func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	User         func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildProjectThenLoader[Q orm.Loadable]() projectThenLoader[Q] {
+	type EnvironmentsLoadInterface interface {
+		LoadEnvironments(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type UserLoadInterface interface {
 		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return projectThenLoader[Q]{
+		Environments: thenLoadBuilder[Q](
+			"Environments",
+			func(ctx context.Context, exec bob.Executor, retrieved EnvironmentsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadEnvironments(ctx, exec, mods...)
+			},
+		),
 		User: thenLoadBuilder[Q](
 			"User",
 			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -624,6 +685,58 @@ func buildProjectThenLoader[Q orm.Loadable]() projectThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadEnvironments loads the project's Environments into the .R struct
+func (o *Project) LoadEnvironments(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Environments = nil
+
+	related, err := o.Environments(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Project = o
+	}
+
+	o.R.Environments = related
+	return nil
+}
+
+// LoadEnvironments loads the project's Environments into the .R struct
+func (os ProjectSlice) LoadEnvironments(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	environments, err := os.Environments(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		o.R.Environments = nil
+	}
+
+	for _, o := range os {
+		for _, rel := range environments {
+			if o.ID != rel.ProjectID {
+				continue
+			}
+
+			rel.R.Project = o
+
+			o.R.Environments = append(o.R.Environments, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadUser loads the project's User into the .R struct
@@ -668,6 +781,74 @@ func (os ProjectSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...
 			o.R.User = rel
 			break
 		}
+	}
+
+	return nil
+}
+
+func insertProjectEnvironments0(ctx context.Context, exec bob.Executor, environments1 []*EnvironmentSetter, project0 *Project) (EnvironmentSlice, error) {
+	for i := range environments1 {
+		environments1[i].ProjectID = omit.From(project0.ID)
+	}
+
+	ret, err := Environments.Insert(bob.ToMods(environments1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertProjectEnvironments0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachProjectEnvironments0(ctx context.Context, exec bob.Executor, count int, environments1 EnvironmentSlice, project0 *Project) (EnvironmentSlice, error) {
+	setter := &EnvironmentSetter{
+		ProjectID: omit.From(project0.ID),
+	}
+
+	err := environments1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachProjectEnvironments0: %w", err)
+	}
+
+	return environments1, nil
+}
+
+func (project0 *Project) InsertEnvironments(ctx context.Context, exec bob.Executor, related ...*EnvironmentSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	environments1, err := insertProjectEnvironments0(ctx, exec, related, project0)
+	if err != nil {
+		return err
+	}
+
+	project0.R.Environments = append(project0.R.Environments, environments1...)
+
+	for _, rel := range environments1 {
+		rel.R.Project = project0
+	}
+	return nil
+}
+
+func (project0 *Project) AttachEnvironments(ctx context.Context, exec bob.Executor, related ...*Environment) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	environments1 := EnvironmentSlice(related)
+
+	_, err = attachProjectEnvironments0(ctx, exec, len(related), environments1, project0)
+	if err != nil {
+		return err
+	}
+
+	project0.R.Environments = append(project0.R.Environments, environments1...)
+
+	for _, rel := range related {
+		rel.R.Project = project0
 	}
 
 	return nil

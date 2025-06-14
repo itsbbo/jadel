@@ -19,6 +19,7 @@ import (
 )
 
 var TableNames = struct {
+	Environments          string
 	Migrations            string
 	PGStatStatements      string
 	PGStatStatementsInfos string
@@ -28,6 +29,7 @@ var TableNames = struct {
 	Sessions              string
 	Users                 string
 }{
+	Environments:          "environments",
 	Migrations:            "migrations",
 	PGStatStatements:      "pg_stat_statements",
 	PGStatStatementsInfos: "pg_stat_statements_info",
@@ -39,6 +41,7 @@ var TableNames = struct {
 }
 
 var ColumnNames = struct {
+	Environments          environmentColumnNames
 	Migrations            migrationColumnNames
 	PGStatStatements      pgStatStatementColumnNames
 	PGStatStatementsInfos pgStatStatementsInfoColumnNames
@@ -48,6 +51,13 @@ var ColumnNames = struct {
 	Sessions              sessionColumnNames
 	Users                 userColumnNames
 }{
+	Environments: environmentColumnNames{
+		ID:        "id",
+		Name:      "name",
+		ProjectID: "project_id",
+		CreatedAt: "created_at",
+		UpdatedAt: "updated_at",
+	},
 	Migrations: migrationColumnNames{
 		ID:        "id",
 		AppliedAt: "applied_at",
@@ -162,6 +172,7 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
+	Environments          environmentWhere[Q]
 	Migrations            migrationWhere[Q]
 	PGStatStatements      pgStatStatementWhere[Q]
 	PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
@@ -172,6 +183,7 @@ func Where[Q psql.Filterable]() struct {
 	Users                 userWhere[Q]
 } {
 	return struct {
+		Environments          environmentWhere[Q]
 		Migrations            migrationWhere[Q]
 		PGStatStatements      pgStatStatementWhere[Q]
 		PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
@@ -181,6 +193,7 @@ func Where[Q psql.Filterable]() struct {
 		Sessions              sessionWhere[Q]
 		Users                 userWhere[Q]
 	}{
+		Environments:          buildEnvironmentWhere[Q](EnvironmentColumns),
 		Migrations:            buildMigrationWhere[Q](MigrationColumns),
 		PGStatStatements:      buildPGStatStatementWhere[Q](PGStatStatementColumns),
 		PGStatStatementsInfos: buildPGStatStatementsInfoWhere[Q](PGStatStatementsInfoColumns),
@@ -195,20 +208,22 @@ func Where[Q psql.Filterable]() struct {
 var Preload = getPreloaders()
 
 type preloaders struct {
-	PrivateKey privateKeyPreloader
-	Project    projectPreloader
-	Server     serverPreloader
-	Session    sessionPreloader
-	User       userPreloader
+	Environment environmentPreloader
+	PrivateKey  privateKeyPreloader
+	Project     projectPreloader
+	Server      serverPreloader
+	Session     sessionPreloader
+	User        userPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
-		PrivateKey: buildPrivateKeyPreloader(),
-		Project:    buildProjectPreloader(),
-		Server:     buildServerPreloader(),
-		Session:    buildSessionPreloader(),
-		User:       buildUserPreloader(),
+		Environment: buildEnvironmentPreloader(),
+		PrivateKey:  buildPrivateKeyPreloader(),
+		Project:     buildProjectPreloader(),
+		Server:      buildServerPreloader(),
+		Session:     buildSessionPreloader(),
+		User:        buildUserPreloader(),
 	}
 }
 
@@ -219,20 +234,22 @@ var (
 )
 
 type thenLoaders[Q orm.Loadable] struct {
-	PrivateKey privateKeyThenLoader[Q]
-	Project    projectThenLoader[Q]
-	Server     serverThenLoader[Q]
-	Session    sessionThenLoader[Q]
-	User       userThenLoader[Q]
+	Environment environmentThenLoader[Q]
+	PrivateKey  privateKeyThenLoader[Q]
+	Project     projectThenLoader[Q]
+	Server      serverThenLoader[Q]
+	Session     sessionThenLoader[Q]
+	User        userThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
-		PrivateKey: buildPrivateKeyThenLoader[Q](),
-		Project:    buildProjectThenLoader[Q](),
-		Server:     buildServerThenLoader[Q](),
-		Session:    buildSessionThenLoader[Q](),
-		User:       buildUserThenLoader[Q](),
+		Environment: buildEnvironmentThenLoader[Q](),
+		PrivateKey:  buildPrivateKeyThenLoader[Q](),
+		Project:     buildProjectThenLoader[Q](),
+		Server:      buildServerThenLoader[Q](),
+		Session:     buildSessionThenLoader[Q](),
+		User:        buildUserThenLoader[Q](),
 	}
 }
 
@@ -277,11 +294,12 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 }
 
 type joins[Q dialect.Joinable] struct {
-	PrivateKeys joinSet[privateKeyJoins[Q]]
-	Projects    joinSet[projectJoins[Q]]
-	Servers     joinSet[serverJoins[Q]]
-	Sessions    joinSet[sessionJoins[Q]]
-	Users       joinSet[userJoins[Q]]
+	Environments joinSet[environmentJoins[Q]]
+	PrivateKeys  joinSet[privateKeyJoins[Q]]
+	Projects     joinSet[projectJoins[Q]]
+	Servers      joinSet[serverJoins[Q]]
+	Sessions     joinSet[sessionJoins[Q]]
+	Users        joinSet[userJoins[Q]]
 }
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
@@ -294,11 +312,12 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
-		PrivateKeys: buildJoinSet[privateKeyJoins[Q]](PrivateKeyColumns, buildPrivateKeyJoins),
-		Projects:    buildJoinSet[projectJoins[Q]](ProjectColumns, buildProjectJoins),
-		Servers:     buildJoinSet[serverJoins[Q]](ServerColumns, buildServerJoins),
-		Sessions:    buildJoinSet[sessionJoins[Q]](SessionColumns, buildSessionJoins),
-		Users:       buildJoinSet[userJoins[Q]](UserColumns, buildUserJoins),
+		Environments: buildJoinSet[environmentJoins[Q]](EnvironmentColumns, buildEnvironmentJoins),
+		PrivateKeys:  buildJoinSet[privateKeyJoins[Q]](PrivateKeyColumns, buildPrivateKeyJoins),
+		Projects:     buildJoinSet[projectJoins[Q]](ProjectColumns, buildProjectJoins),
+		Servers:      buildJoinSet[serverJoins[Q]](ServerColumns, buildServerJoins),
+		Sessions:     buildJoinSet[sessionJoins[Q]](SessionColumns, buildSessionJoins),
+		Users:        buildJoinSet[userJoins[Q]](UserColumns, buildUserJoins),
 	}
 }
 

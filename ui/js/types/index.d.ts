@@ -23,3 +23,10 @@ export interface SharedData {
     sidebarOpen: boolean;
     [key: string]: unknown;
 }
+
+export interface Pagination<T> {
+    items: T[];
+    perPage: number;
+    prevPageURL?: string;
+    nextPageURL?: string;
+}

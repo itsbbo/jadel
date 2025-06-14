@@ -16,6 +16,9 @@ import (
 // Set the testDB to enable tests that use the database
 var testDB bob.Transactor
 
+// Make sure the type Environment runs hooks after queries
+var _ bob.HookableType = &models.Environment{}
+
 // Make sure the type Migration runs hooks after queries
 var _ bob.HookableType = &models.Migration{}
 
@@ -40,14 +43,14 @@ var _ bob.HookableType = &models.Session{}
 // Make sure the type User runs hooks after queries
 var _ bob.HookableType = &models.User{}
 
-// Make sure the type decimal.Decimal satisfies database/sql.Scanner
-var _ sql.Scanner = (*decimal.Decimal)(nil)
-
-// Make sure the type decimal.Decimal satisfies database/sql/driver.Valuer
-var _ driver.Valuer = *new(decimal.Decimal)
-
 // Make sure the type ulid.ULID satisfies database/sql.Scanner
 var _ sql.Scanner = (*ulid.ULID)(nil)
 
 // Make sure the type ulid.ULID satisfies database/sql/driver.Valuer
 var _ driver.Valuer = *new(ulid.ULID)
+
+// Make sure the type decimal.Decimal satisfies database/sql.Scanner
+var _ sql.Scanner = (*decimal.Decimal)(nil)
+
+// Make sure the type decimal.Decimal satisfies database/sql/driver.Valuer
+var _ driver.Valuer = *new(decimal.Decimal)
