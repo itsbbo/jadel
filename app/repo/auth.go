@@ -16,6 +16,7 @@ import (
 	"github.com/samber/oops"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/drivers/pgx"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Auth struct {
@@ -43,6 +44,10 @@ func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSession
 
 	user, err := model.Users.Insert(&userSetter).One(ctx, tx)
 	if err != nil {
+		if model.UserErrors.ErrUniqueUsersEmailKey.Is(err) {
+			return nil, "", auth.ErrDuplicateEmail
+		}
+
 		return nil, "", oops.In("model.Users.Insert").Errorf("failed to insert user: %w", err)
 	}
 
@@ -70,15 +75,25 @@ func (d *Auth) FindByEmailPassword(ctx context.Context, email string, password s
 	user, err := model.Users.Query(
 		psql.WhereAnd(
 			model.SelectWhere.Users.Email.EQ(email),
-			model.SelectWhere.Users.Password.EQ(psql.Raw(`crypt($2, password)`, password).String()),
 		),
 	).One(ctx, d.db)
 
-	if err != nil {
-		return nil, err
+	if err == nil {
+		if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+			return nil, auth.ErrUserNotFound
+		}
+
+		return user, nil
 	}
 
-	return user, nil
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, auth.ErrUserNotFound
+	}
+
+	return user, oops.
+		In("FindByEmailPassword").
+		With("email", email).
+		Errorf("failed to find user by email: %w", err)
 }
 
 func (d *Auth) InsertSession(ctx context.Context, param auth.InsertSessionParam) error {
@@ -120,4 +135,23 @@ func (d *Auth) FindUserBySession(ctx context.Context, sessionID string) (*model.
 		In("FindUserBySession").
 		With("sessionID", sessionID).
 		Errorf("cannot find user by session id: %w", err)
+}
+
+func (d *Auth) DeleteSession(ctx context.Context, sessionID string) error {
+	_, err := model.Sessions.Delete(
+		model.DeleteWhere.Sessions.ID.EQ(sessionID),
+	).One(ctx, d.db)
+
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return app.ErrSessionNotFound
+	}
+
+	return oops.
+		In("DeleteSession").
+		With("sessionID", sessionID).
+		Errorf("cannot delete session: %w", err)
 }

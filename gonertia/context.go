@@ -82,6 +82,7 @@ func ValidationErrorsFromContext(ctx context.Context) ValidationErrors {
 	if ok {
 		return validationErrors
 	}
+
 	return ValidationErrors{}
 }
 

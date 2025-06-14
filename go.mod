@@ -6,7 +6,6 @@ require (
 	github.com/Oudwins/zog v0.21.1
 	github.com/aarondl/opt v0.0.0-20230114172057-b91f370c41f0
 	github.com/go-chi/chi/v5 v5.2.1
-	github.com/gorilla/csrf v1.7.3
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/samber/oops v1.18.1
@@ -18,7 +17,6 @@ require (
 
 require (
 	github.com/aarondl/json v0.0.0-20221020222930-8b0db17ef1bf // indirect
-	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

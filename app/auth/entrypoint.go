@@ -9,6 +9,7 @@ type Repository interface {
 	NewUserWithSessionMutator
 	FindByEmailPasswordQuery
 	InsertSessionMutator
+	DeleteSessionMutator
 }
 
 type Deps struct {
@@ -34,4 +35,6 @@ func (d *Deps) InitRoutes() {
 		r.Get("/login", d.LoginPage)
 		r.Post("/login", d.Login)
 	})
+
+	d.server.Post("/auth/logout", d.Logout)
 }

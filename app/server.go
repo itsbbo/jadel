@@ -3,15 +3,12 @@ package app
 import (
 	"encoding/json"
 	"log/slog"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Oudwins/zog"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 	"github.com/itsbbo/jadel/gonertia"
 )
 
@@ -38,11 +35,13 @@ func (s *Server) AddStaticAssetsRoute() {
 
 func (s *Server) BindJSON(_ http.ResponseWriter, r *http.Request, schema *zog.StructSchema, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		slog.Error("cannot parse json", slog.Any("error", err))
 		return false
 	}
 
 	errMap := schema.Validate(target)
 	if errMap == nil {
+
 		return true
 	}
 
@@ -57,18 +56,18 @@ func (s *Server) BindJSON(_ http.ResponseWriter, r *http.Request, schema *zog.St
 	return false
 }
 
-func (s *Server) AddValidationErrors(w http.ResponseWriter, r *http.Request, errMap map[string]string) {
+func (s *Server) AddValidationErrors(_ http.ResponseWriter, r *http.Request, errMap map[string]string) *http.Request {
 	issues := make(gonertia.ValidationErrors, len(errMap))
 	for field, err := range errMap {
 		issues[field] = err
 	}
 
-	ctx := gonertia.AddValidationErrors(r.Context(), issues)
-	r = r.WithContext(ctx)
+	ctx := gonertia.SetValidationErrors(r.Context(), issues)
+	return r.WithContext(ctx)
 }
 
-func (s *Server) AddInternalErrorMsg(w http.ResponseWriter, r *http.Request) {
-	s.AddValidationErrors(w, r, map[string]string{
+func (s *Server) AddInternalErrorMsg(w http.ResponseWriter, r *http.Request) *http.Request {
+	return s.AddValidationErrors(w, r, map[string]string{
 		"_internal": "Internal server error. Try again later.",
 	})
 }
@@ -98,24 +97,6 @@ func (s *Server) Back(w http.ResponseWriter, r *http.Request) {
 	s.inertia.Back(w, r)
 }
 
-func (Server) RealIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		if i := strings.Index(ip, ","); i != -1 {
-			ip = ip[:i]
-		}
-
-		return strings.TrimSpace(strings.Trim(ip, "[]"))
-	}
-
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return strings.Trim(ip, "[]")
-	}
-
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-
-	return ip
-}
-
 func (s *Server) PrintRoutes() {
 	chi.Walk(s.Mux, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		slog.Info("Route", slog.String("method", method), slog.String("route", route))
@@ -125,22 +106,6 @@ func (s *Server) PrintRoutes() {
 
 func NewServer(c Config, inertia *gonertia.Inertia) *Server {
 	r := chi.NewRouter()
-
-	CSRF := csrf.Protect(
-		[]byte(c.Server.CSRFKey),
-		csrf.Domain(c.Cookie.Domain),
-		csrf.HttpOnly(c.Cookie.HTTPOnly),
-		csrf.Secure(c.Cookie.Secure),
-		csrf.CookieName(CSRFCookieName),
-		csrf.RequestHeader(CSRFHeaderName),
-	)
-
-	r.Use(
-		middleware.Recoverer,
-		middleware.RequestID,
-		middleware.RealIP,
-		CSRF,
-	)
 
 	var sameSite http.SameSite
 	switch c.Cookie.SameSite {
@@ -153,6 +118,12 @@ func NewServer(c Config, inertia *gonertia.Inertia) *Server {
 	default:
 		sameSite = http.SameSiteDefaultMode
 	}
+
+	r.Use(
+		middleware.Recoverer,
+		middleware.RequestID,
+		middleware.RealIP,
+	)
 
 	server := Server{
 		Mux:            r,

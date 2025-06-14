@@ -60,12 +60,19 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 
 func (m *Middleware) RedirectIfAuthenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := r.Cookie(SessionKey)
-		if err == nil {
-			m.server.RedirectTo(w, r, "/dashboard")
+		cookie, err := r.Cookie(SessionKey)
+		if err != nil {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		if cookie.Value == "" {
+			m.server.SetCookie(w, SessionKey, "", -1)
+			m.server.RedirectTo(w, r, "/auth/login")
+			return
+		}
+
+		m.server.RedirectTo(w, r, "/dashboard")
+		return
 	})
 }

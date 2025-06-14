@@ -3,12 +3,18 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type LoginRequest struct {
@@ -46,10 +52,16 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := d.repo.FindByEmailPassword(r.Context(), request.Email, request.Password)
 	if err != nil {
-		d.server.AddValidationErrors(w, r, map[string]string{
-			"email":    "Email or password is incorrect.",
-			"password": "Email or password is incorrect.",
-		})
+		if errors.Is(err, ErrUserNotFound) {
+			d.LoginPage(w, d.server.AddValidationErrors(w, r, map[string]string{
+				"email":    "Email or password is incorrect.",
+				"password": "Email or password is incorrect.",
+			}))
+			return
+		}
+
+		slog.Error("Login.FindByEmailPassword failed", slog.Any("error", err))
+		d.server.AddInternalErrorMsg(w, r)
 		d.LoginPage(w, r)
 		return
 	}
@@ -63,8 +75,8 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 		UserAgent: r.UserAgent(),
 	})
 	if err != nil {
-		d.server.AddInternalErrorMsg(w, r)
-		d.LoginPage(w, r)
+		slog.Error("Login.InsertSession failed", slog.Any("error", err))
+		d.LoginPage(w, d.server.AddInternalErrorMsg(w, r))
 		return
 	}
 

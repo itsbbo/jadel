@@ -313,7 +313,7 @@ func (i *Inertia) resolveDeferredProps(r *http.Request, component string, props 
 
 func (i *Inertia) collectProps(r *http.Request, props Props) Props {
 	propsCtx := PropsFromContext(r.Context())
-	result := make(Props, len(propsCtx)+len(i.sharedProps)+len(props)+1)
+	result := make(Props)
 
 	// Add validation errors from context to the result.
 	{

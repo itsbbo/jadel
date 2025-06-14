@@ -82,7 +82,7 @@ func inertiaVersionFromRequest(r *http.Request) string {
 }
 
 func redirectResponse(w http.ResponseWriter, r *http.Request, url string, status ...int) {
-	http.Redirect(w, r, url, firstOr[int](status, http.StatusFound))
+	http.Redirect(w, r, url, firstOr(status, http.StatusFound))
 }
 
 func setJSONResponse(w http.ResponseWriter) {

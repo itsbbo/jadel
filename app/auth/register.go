@@ -12,6 +12,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	ErrDuplicateEmail = errors.New("duplicate email")
+)
+
 type RegisterRequest struct {
 	Name                 string `json:"name"`
 	Email                string `json:"email"`
@@ -43,10 +47,9 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.Password != request.PasswordConfirmation {
-		d.server.AddValidationErrors(w, r, map[string]string{
+		d.server.Back(w, d.server.AddValidationErrors(w, r, map[string]string{
 			"passwordConfirmation": "Password input do not match the confirmation password.",
-		})
-		d.server.Back(w, r)
+		}))
 		return
 	}
 
@@ -54,7 +57,7 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 		Name:      request.Name,
 		Email:     request.Email,
 		Password:  hashPassword(request.Password),
-		IPAddr:    d.server.RealIP(r),
+		IPAddr:    r.RemoteAddr,
 		UserAgent: r.UserAgent(),
 	})
 
@@ -64,11 +67,10 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if errors.Is(err, model.ErrUniqueConstraint) {
-		d.server.AddValidationErrors(w, r, map[string]string{
+	if errors.Is(err, ErrDuplicateEmail) {
+		d.RegisterPage(w, d.server.AddValidationErrors(w, r, map[string]string{
 			"email": "Email has already been taken.",
-		})
-		d.server.Back(w, r)
+		}))
 		return
 	}
 
