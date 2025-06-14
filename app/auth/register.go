@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/model"
@@ -62,7 +61,7 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err == nil {
-		d.server.SetCookie(w, app.SessionKey, session, 3*time.Hour)
+		d.server.SetCookie(w, app.SessionKey, session, app.SessionTime)
 		d.server.RedirectTo(w, r, "/dashboard")
 		return
 	}

@@ -2,6 +2,7 @@
 create table servers (
     id bytea PRIMARY KEY not null,
     name varchar(255) not null,
+    user_id bytea not null references users(id) on delete cascade,
     description text,
     ip inet not null,
     port integer not null default 22,

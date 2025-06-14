@@ -56,7 +56,7 @@ func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSession
 		UserID:    omit.From(user.ID),
 		IPAddress: omitnull.From(r.IPAddr),
 		UserAgent: omitnull.From(r.UserAgent),
-		ExpiredAt: omit.From(time.Now().Add(3 * time.Hour)),
+		ExpiredAt: omit.From(time.Now().Add(app.SessionTime)),
 	}).One(ctx, tx)
 
 	if err != nil {
@@ -121,6 +121,7 @@ func (d *Auth) FindUserBySession(ctx context.Context, sessionID string) (*model.
 	user, err := model.Users.Query(
 		model.SelectJoins.Users.InnerJoin.Sessions,
 		model.SelectWhere.Sessions.ID.EQ(sessionID),
+		model.SelectWhere.Sessions.ExpiredAt.LT(time.Now()),
 	).One(ctx, d.db)
 
 	if err == nil {

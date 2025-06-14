@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
@@ -12,6 +13,7 @@ const (
 	CSRFHeaderName = "X-XSRF-TOKEN"
 	SessionKey     = "jadel_session"
 	UserKey        = "user"
+	SessionTime    = 3 * time.Hour
 )
 
 func CurrentUser(r *http.Request) *model.User {

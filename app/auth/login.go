@@ -69,7 +69,7 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 	err = d.repo.InsertSession(r.Context(), InsertSessionParam{
 		UserID:    user.ID,
 		SessionID: sessionID,
-		Expires:   3 * time.Hour,
+		Expires:   app.SessionTime,
 		IPAddr:    r.RemoteAddr,
 		UserAgent: r.UserAgent(),
 	})
@@ -79,6 +79,6 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d.server.SetCookie(w, app.SessionKey, sessionID, 3*time.Hour)
+	d.server.SetCookie(w, app.SessionKey, sessionID, app.SessionTime)
 	d.server.RedirectTo(w, r, "/dashboard")
 }
