@@ -33,16 +33,15 @@ func (s *Server) AddStaticAssetsRoute() {
 	s.Get("/public/build/assets/*", http.HandlerFunc(publicAssets.ServeHTTP))
 }
 
-func (s *Server) BindJSON(_ http.ResponseWriter, r *http.Request, schema *zog.StructSchema, target any) bool {
+func (s *Server) Bind(w http.ResponseWriter, r *http.Request, schema *zog.StructSchema, target any) (*http.Request, bool) {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
 		slog.Error("cannot parse json", slog.Any("error", err))
-		return false
+		return nil, false
 	}
 
 	errMap := schema.Validate(target)
 	if errMap == nil {
-
-		return true
+		return nil, true
 	}
 
 	issues := make(gonertia.ValidationErrors, len(errMap))
@@ -51,9 +50,7 @@ func (s *Server) BindJSON(_ http.ResponseWriter, r *http.Request, schema *zog.St
 	}
 
 	ctx := gonertia.SetValidationErrors(r.Context(), issues)
-	r = r.WithContext(ctx)
-
-	return false
+	return r.WithContext(ctx), false
 }
 
 func (s *Server) AddValidationErrors(_ http.ResponseWriter, r *http.Request, errMap map[string]string) *http.Request {

@@ -1,0 +1,65 @@
+package repo
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+
+	"github.com/aarondl/opt/omit"
+	"github.com/itsbbo/jadel/app/settings"
+	"github.com/itsbbo/jadel/model"
+	"github.com/samber/oops"
+	"github.com/stephenafamo/bob/drivers/pgx"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type Settings struct {
+	db pgx.Pool
+}
+
+func NewSettings(db pgx.Pool) *Settings {
+	return &Settings{
+		db: db,
+	}
+}
+
+func (s *Settings) UpdatePassword(ctx context.Context, param settings.ChangePasswordParam) error {
+	user, err := model.Users.Query(
+		model.SelectWhere.Users.Email.EQ(param.Email),
+	).One(ctx, s.db)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return settings.ErrUserNotFound
+		}
+
+		return oops.In("failed to find user").
+			With("email", param.Email).
+			Wrap(err)
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(param.CurrentPassword)); err != nil {
+		return settings.ErrWrongPassword
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return oops.In("begin").With("email", param.Email).Wrap(err)
+	}
+
+	defer tx.Rollback(ctx)
+
+	err = user.Update(ctx, tx, &model.UserSetter{
+		Password: omit.From(param.NewPassword),
+	})
+	if err != nil {
+		return oops.In("update password").With("email", param.Email).Wrap(err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return oops.In("commit").With("email", param.Email).Wrap(err)
+	}
+
+	return nil
+}

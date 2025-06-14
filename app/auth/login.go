@@ -45,8 +45,8 @@ func (d *Deps) LoginPage(w http.ResponseWriter, r *http.Request) {
 func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 	var request LoginRequest
 
-	ok := d.server.BindJSON(w, r, loginSchema, &request)
-	if !ok {
+	if req, ok := d.server.Bind(w, r, loginSchema, &request); !ok {
+		d.LoginPage(w, req)
 		return
 	}
 
@@ -61,8 +61,7 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		slog.Error("Login.FindByEmailPassword failed", slog.Any("error", err))
-		d.server.AddInternalErrorMsg(w, r)
-		d.LoginPage(w, r)
+		d.LoginPage(w, d.server.AddInternalErrorMsg(w, r))
 		return
 	}
 

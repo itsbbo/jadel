@@ -28,6 +28,5 @@ func (d *Deps) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Error("logout failed", slog.Any("error", err))
-	d.server.AddInternalErrorMsg(w, r)
-	d.server.Back(w, r)
+	d.server.Back(w, d.server.AddInternalErrorMsg(w, r))
 }

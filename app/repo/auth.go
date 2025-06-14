@@ -48,7 +48,7 @@ func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSession
 			return nil, "", auth.ErrDuplicateEmail
 		}
 
-		return nil, "", oops.In("model.Users.Insert").Errorf("failed to insert user: %w", err)
+		return nil, "", oops.In("model.Users.Insert").Wrap(err)
 	}
 
 	session, err := model.Sessions.Insert(&model.SessionSetter{
@@ -60,12 +60,12 @@ func (d *Auth) NewUserWithSession(ctx context.Context, r auth.NewUserWithSession
 	}).One(ctx, tx)
 
 	if err != nil {
-		return nil, "", oops.In("user.InsertSessions").Errorf("failed to insert user: %w", err)
+		return nil, "", oops.In("user.InsertSessions").Wrap(err)
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, "", oops.In("tx.Commit").Errorf("failed to commit transaction: %w", err)
+		return nil, "", oops.In("tx.Commit").Wrap(err)
 	}
 
 	return user, session.ID, nil
@@ -93,7 +93,7 @@ func (d *Auth) FindByEmailPassword(ctx context.Context, email string, password s
 	return user, oops.
 		In("FindByEmailPassword").
 		With("email", email).
-		Errorf("failed to find user by email: %w", err)
+		Wrap(err)
 }
 
 func (d *Auth) InsertSession(ctx context.Context, param auth.InsertSessionParam) error {
@@ -134,7 +134,7 @@ func (d *Auth) FindUserBySession(ctx context.Context, sessionID string) (*model.
 	return user, oops.
 		In("FindUserBySession").
 		With("sessionID", sessionID).
-		Errorf("cannot find user by session id: %w", err)
+		Wrap(err)
 }
 
 func (d *Auth) DeleteSession(ctx context.Context, sessionID string) error {
@@ -153,5 +153,5 @@ func (d *Auth) DeleteSession(ctx context.Context, sessionID string) error {
 	return oops.
 		In("DeleteSession").
 		With("sessionID", sessionID).
-		Errorf("cannot delete session: %w", err)
+		Wrap(err)
 }

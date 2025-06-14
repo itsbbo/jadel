@@ -41,13 +41,13 @@ func (d *Deps) RegisterPage(w http.ResponseWriter, r *http.Request) {
 
 func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	var request RegisterRequest
-	ok := d.server.BindJSON(w, r, registerSchema, &request)
-	if !ok {
+	if req, ok := d.server.Bind(w, r, registerSchema, &request); !ok {
+		d.RegisterPage(w, req)
 		return
 	}
 
 	if request.Password != request.PasswordConfirmation {
-		d.server.Back(w, d.server.AddValidationErrors(w, r, map[string]string{
+		d.RegisterPage(w, d.server.AddValidationErrors(w, r, map[string]string{
 			"passwordConfirmation": "Password input do not match the confirmation password.",
 		}))
 		return
@@ -75,8 +75,7 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Error("register failed", slog.Any("error", err))
-	d.server.AddInternalErrorMsg(w, r)
-	d.server.Back(w, r)
+	d.RegisterPage(w, d.server.AddInternalErrorMsg(w, r))
 }
 
 func hashPassword(password string) string {
