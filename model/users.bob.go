@@ -47,7 +47,10 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 
 // userR is where relationships are stored.
 type userR struct {
-	Sessions SessionSlice `json:"Sessions"` // sessions.sessions_user_id_fkey
+	PrivateKeys PrivateKeySlice `json:"PrivateKeys"` // private_keys.private_keys_user_id_fkey
+	Projects    ProjectSlice    `json:"Projects"`    // projects.projects_user_id_fkey
+	Servers     ServerSlice     `json:"Servers"`     // servers.servers_user_id_fkey
+	Sessions    SessionSlice    `json:"Sessions"`    // sessions.sessions_user_id_fkey
 }
 
 type userColumnNames struct {
@@ -516,8 +519,11 @@ func (o UserSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 }
 
 type userJoins[Q dialect.Joinable] struct {
-	typ      string
-	Sessions modAs[Q, sessionColumns]
+	typ         string
+	PrivateKeys modAs[Q, privateKeyColumns]
+	Projects    modAs[Q, projectColumns]
+	Servers     modAs[Q, serverColumns]
+	Sessions    modAs[Q, sessionColumns]
 }
 
 func (j userJoins[Q]) aliasedAs(alias string) userJoins[Q] {
@@ -527,6 +533,48 @@ func (j userJoins[Q]) aliasedAs(alias string) userJoins[Q] {
 func buildUserJoins[Q dialect.Joinable](cols userColumns, typ string) userJoins[Q] {
 	return userJoins[Q]{
 		typ: typ,
+		PrivateKeys: modAs[Q, privateKeyColumns]{
+			c: PrivateKeyColumns,
+			f: func(to privateKeyColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, PrivateKeys.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Projects: modAs[Q, projectColumns]{
+			c: ProjectColumns,
+			f: func(to projectColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Projects.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Servers: modAs[Q, serverColumns]{
+			c: ServerColumns,
+			f: func(to serverColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Servers.Name().As(to.Alias())).On(
+						to.UserID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		Sessions: modAs[Q, sessionColumns]{
 			c: SessionColumns,
 			f: func(to sessionColumns) bob.Mod[Q] {
@@ -542,6 +590,69 @@ func buildUserJoins[Q dialect.Joinable](cols userColumns, typ string) userJoins[
 			},
 		},
 	}
+}
+
+// PrivateKeys starts a query for related objects on private_keys
+func (o *User) PrivateKeys(mods ...bob.Mod[*dialect.SelectQuery]) PrivateKeysQuery {
+	return PrivateKeys.Query(append(mods,
+		sm.Where(PrivateKeyColumns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) PrivateKeys(mods ...bob.Mod[*dialect.SelectQuery]) PrivateKeysQuery {
+	pkID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkID[i] = o.ID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "bytea[]")),
+	))
+
+	return PrivateKeys.Query(append(mods,
+		sm.Where(psql.Group(PrivateKeyColumns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// Projects starts a query for related objects on projects
+func (o *User) Projects(mods ...bob.Mod[*dialect.SelectQuery]) ProjectsQuery {
+	return Projects.Query(append(mods,
+		sm.Where(ProjectColumns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Projects(mods ...bob.Mod[*dialect.SelectQuery]) ProjectsQuery {
+	pkID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkID[i] = o.ID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "bytea[]")),
+	))
+
+	return Projects.Query(append(mods,
+		sm.Where(psql.Group(ProjectColumns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// Servers starts a query for related objects on servers
+func (o *User) Servers(mods ...bob.Mod[*dialect.SelectQuery]) ServersQuery {
+	return Servers.Query(append(mods,
+		sm.Where(ServerColumns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Servers(mods ...bob.Mod[*dialect.SelectQuery]) ServersQuery {
+	pkID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkID[i] = o.ID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "bytea[]")),
+	))
+
+	return Servers.Query(append(mods,
+		sm.Where(psql.Group(ServerColumns.UserID).OP("IN", PKArgExpr)),
+	)...)
 }
 
 // Sessions starts a query for related objects on sessions
@@ -571,6 +682,48 @@ func (o *User) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "PrivateKeys":
+		rels, ok := retrieved.(PrivateKeySlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.PrivateKeys = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
+	case "Projects":
+		rels, ok := retrieved.(ProjectSlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Projects = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
+	case "Servers":
+		rels, ok := retrieved.(ServerSlice)
+		if !ok {
+			return fmt.Errorf("user cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Servers = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.User = o
+			}
+		}
+		return nil
 	case "Sessions":
 		rels, ok := retrieved.(SessionSlice)
 		if !ok {
@@ -597,15 +750,45 @@ func buildUserPreloader() userPreloader {
 }
 
 type userThenLoader[Q orm.Loadable] struct {
-	Sessions func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	PrivateKeys func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Projects    func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Servers     func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Sessions    func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildUserThenLoader[Q orm.Loadable]() userThenLoader[Q] {
+	type PrivateKeysLoadInterface interface {
+		LoadPrivateKeys(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type ProjectsLoadInterface interface {
+		LoadProjects(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type ServersLoadInterface interface {
+		LoadServers(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type SessionsLoadInterface interface {
 		LoadSessions(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return userThenLoader[Q]{
+		PrivateKeys: thenLoadBuilder[Q](
+			"PrivateKeys",
+			func(ctx context.Context, exec bob.Executor, retrieved PrivateKeysLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadPrivateKeys(ctx, exec, mods...)
+			},
+		),
+		Projects: thenLoadBuilder[Q](
+			"Projects",
+			func(ctx context.Context, exec bob.Executor, retrieved ProjectsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadProjects(ctx, exec, mods...)
+			},
+		),
+		Servers: thenLoadBuilder[Q](
+			"Servers",
+			func(ctx context.Context, exec bob.Executor, retrieved ServersLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadServers(ctx, exec, mods...)
+			},
+		),
 		Sessions: thenLoadBuilder[Q](
 			"Sessions",
 			func(ctx context.Context, exec bob.Executor, retrieved SessionsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -613,6 +796,162 @@ func buildUserThenLoader[Q orm.Loadable]() userThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadPrivateKeys loads the user's PrivateKeys into the .R struct
+func (o *User) LoadPrivateKeys(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.PrivateKeys = nil
+
+	related, err := o.PrivateKeys(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.PrivateKeys = related
+	return nil
+}
+
+// LoadPrivateKeys loads the user's PrivateKeys into the .R struct
+func (os UserSlice) LoadPrivateKeys(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	privateKeys, err := os.PrivateKeys(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		o.R.PrivateKeys = nil
+	}
+
+	for _, o := range os {
+		for _, rel := range privateKeys {
+			if o.ID != rel.UserID {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.PrivateKeys = append(o.R.PrivateKeys, rel)
+		}
+	}
+
+	return nil
+}
+
+// LoadProjects loads the user's Projects into the .R struct
+func (o *User) LoadProjects(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Projects = nil
+
+	related, err := o.Projects(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.Projects = related
+	return nil
+}
+
+// LoadProjects loads the user's Projects into the .R struct
+func (os UserSlice) LoadProjects(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	projects, err := os.Projects(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		o.R.Projects = nil
+	}
+
+	for _, o := range os {
+		for _, rel := range projects {
+			if o.ID != rel.UserID {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.Projects = append(o.R.Projects, rel)
+		}
+	}
+
+	return nil
+}
+
+// LoadServers loads the user's Servers into the .R struct
+func (o *User) LoadServers(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Servers = nil
+
+	related, err := o.Servers(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.User = o
+	}
+
+	o.R.Servers = related
+	return nil
+}
+
+// LoadServers loads the user's Servers into the .R struct
+func (os UserSlice) LoadServers(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	servers, err := os.Servers(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		o.R.Servers = nil
+	}
+
+	for _, o := range os {
+		for _, rel := range servers {
+			if o.ID != rel.UserID {
+				continue
+			}
+
+			rel.R.User = o
+
+			o.R.Servers = append(o.R.Servers, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadSessions loads the user's Sessions into the .R struct
@@ -662,6 +1001,210 @@ func (os UserSlice) LoadSessions(ctx context.Context, exec bob.Executor, mods ..
 
 			o.R.Sessions = append(o.R.Sessions, rel)
 		}
+	}
+
+	return nil
+}
+
+func insertUserPrivateKeys0(ctx context.Context, exec bob.Executor, privateKeys1 []*PrivateKeySetter, user0 *User) (PrivateKeySlice, error) {
+	for i := range privateKeys1 {
+		privateKeys1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := PrivateKeys.Insert(bob.ToMods(privateKeys1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserPrivateKeys0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserPrivateKeys0(ctx context.Context, exec bob.Executor, count int, privateKeys1 PrivateKeySlice, user0 *User) (PrivateKeySlice, error) {
+	setter := &PrivateKeySetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := privateKeys1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserPrivateKeys0: %w", err)
+	}
+
+	return privateKeys1, nil
+}
+
+func (user0 *User) InsertPrivateKeys(ctx context.Context, exec bob.Executor, related ...*PrivateKeySetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	privateKeys1, err := insertUserPrivateKeys0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.PrivateKeys = append(user0.R.PrivateKeys, privateKeys1...)
+
+	for _, rel := range privateKeys1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachPrivateKeys(ctx context.Context, exec bob.Executor, related ...*PrivateKey) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	privateKeys1 := PrivateKeySlice(related)
+
+	_, err = attachUserPrivateKeys0(ctx, exec, len(related), privateKeys1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.PrivateKeys = append(user0.R.PrivateKeys, privateKeys1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
+func insertUserProjects0(ctx context.Context, exec bob.Executor, projects1 []*ProjectSetter, user0 *User) (ProjectSlice, error) {
+	for i := range projects1 {
+		projects1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Projects.Insert(bob.ToMods(projects1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserProjects0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserProjects0(ctx context.Context, exec bob.Executor, count int, projects1 ProjectSlice, user0 *User) (ProjectSlice, error) {
+	setter := &ProjectSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := projects1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserProjects0: %w", err)
+	}
+
+	return projects1, nil
+}
+
+func (user0 *User) InsertProjects(ctx context.Context, exec bob.Executor, related ...*ProjectSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	projects1, err := insertUserProjects0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Projects = append(user0.R.Projects, projects1...)
+
+	for _, rel := range projects1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachProjects(ctx context.Context, exec bob.Executor, related ...*Project) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	projects1 := ProjectSlice(related)
+
+	_, err = attachUserProjects0(ctx, exec, len(related), projects1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Projects = append(user0.R.Projects, projects1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
+func insertUserServers0(ctx context.Context, exec bob.Executor, servers1 []*ServerSetter, user0 *User) (ServerSlice, error) {
+	for i := range servers1 {
+		servers1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Servers.Insert(bob.ToMods(servers1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserServers0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserServers0(ctx context.Context, exec bob.Executor, count int, servers1 ServerSlice, user0 *User) (ServerSlice, error) {
+	setter := &ServerSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := servers1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserServers0: %w", err)
+	}
+
+	return servers1, nil
+}
+
+func (user0 *User) InsertServers(ctx context.Context, exec bob.Executor, related ...*ServerSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	servers1, err := insertUserServers0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Servers = append(user0.R.Servers, servers1...)
+
+	for _, rel := range servers1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachServers(ctx context.Context, exec bob.Executor, related ...*Server) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	servers1 := ServerSlice(related)
+
+	_, err = attachUserServers0(ctx, exec, len(related), servers1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Servers = append(user0.R.Servers, servers1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
 	}
 
 	return nil

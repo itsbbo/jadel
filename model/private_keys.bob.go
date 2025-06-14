@@ -29,6 +29,7 @@ import (
 type PrivateKey struct {
 	ID           ulid.ULID        `db:"id,pk" json:"id"`
 	Name         string           `db:"name" json:"name"`
+	UserID       ulid.ULID        `db:"user_id" json:"user_id"`
 	Description  null.Val[string] `db:"description" json:"description"`
 	PrivateKey   string           `db:"private_key" json:"private_key"`
 	IsGitRelated bool             `db:"is_git_related" json:"is_git_related"`
@@ -50,12 +51,14 @@ type PrivateKeysQuery = *psql.ViewQuery[*PrivateKey, PrivateKeySlice]
 
 // privateKeyR is where relationships are stored.
 type privateKeyR struct {
+	User    *User       `json:"User"`    // private_keys.private_keys_user_id_fkey
 	Servers ServerSlice `json:"Servers"` // servers.servers_private_key_id_fkey
 }
 
 type privateKeyColumnNames struct {
 	ID           string
 	Name         string
+	UserID       string
 	Description  string
 	PrivateKey   string
 	IsGitRelated string
@@ -69,6 +72,7 @@ type privateKeyColumns struct {
 	tableAlias   string
 	ID           psql.Expression
 	Name         psql.Expression
+	UserID       psql.Expression
 	Description  psql.Expression
 	PrivateKey   psql.Expression
 	IsGitRelated psql.Expression
@@ -89,6 +93,7 @@ func buildPrivateKeyColumns(alias string) privateKeyColumns {
 		tableAlias:   alias,
 		ID:           psql.Quote(alias, "id"),
 		Name:         psql.Quote(alias, "name"),
+		UserID:       psql.Quote(alias, "user_id"),
 		Description:  psql.Quote(alias, "description"),
 		PrivateKey:   psql.Quote(alias, "private_key"),
 		IsGitRelated: psql.Quote(alias, "is_git_related"),
@@ -100,6 +105,7 @@ func buildPrivateKeyColumns(alias string) privateKeyColumns {
 type privateKeyWhere[Q psql.Filterable] struct {
 	ID           psql.WhereMod[Q, ulid.ULID]
 	Name         psql.WhereMod[Q, string]
+	UserID       psql.WhereMod[Q, ulid.ULID]
 	Description  psql.WhereNullMod[Q, string]
 	PrivateKey   psql.WhereMod[Q, string]
 	IsGitRelated psql.WhereMod[Q, bool]
@@ -115,6 +121,7 @@ func buildPrivateKeyWhere[Q psql.Filterable](cols privateKeyColumns) privateKeyW
 	return privateKeyWhere[Q]{
 		ID:           psql.Where[Q, ulid.ULID](cols.ID),
 		Name:         psql.Where[Q, string](cols.Name),
+		UserID:       psql.Where[Q, ulid.ULID](cols.UserID),
 		Description:  psql.WhereNull[Q, string](cols.Description),
 		PrivateKey:   psql.Where[Q, string](cols.PrivateKey),
 		IsGitRelated: psql.Where[Q, bool](cols.IsGitRelated),
@@ -142,6 +149,7 @@ type privateKeyErrors struct {
 type PrivateKeySetter struct {
 	ID           omit.Val[ulid.ULID]  `db:"id,pk" json:"id"`
 	Name         omit.Val[string]     `db:"name" json:"name"`
+	UserID       omit.Val[ulid.ULID]  `db:"user_id" json:"user_id"`
 	Description  omitnull.Val[string] `db:"description" json:"description"`
 	PrivateKey   omit.Val[string]     `db:"private_key" json:"private_key"`
 	IsGitRelated omit.Val[bool]       `db:"is_git_related" json:"is_git_related"`
@@ -150,12 +158,15 @@ type PrivateKeySetter struct {
 }
 
 func (s PrivateKeySetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 8)
 	if s.ID.IsSet() {
 		vals = append(vals, "id")
 	}
 	if s.Name.IsSet() {
 		vals = append(vals, "name")
+	}
+	if s.UserID.IsSet() {
+		vals = append(vals, "user_id")
 	}
 	if !s.Description.IsUnset() {
 		vals = append(vals, "description")
@@ -182,6 +193,9 @@ func (s PrivateKeySetter) Overwrite(t *PrivateKey) {
 	if s.Name.IsSet() {
 		t.Name = s.Name.MustGet()
 	}
+	if s.UserID.IsSet() {
+		t.UserID = s.UserID.MustGet()
+	}
 	if !s.Description.IsUnset() {
 		t.Description = s.Description.MustGetNull()
 	}
@@ -205,7 +219,7 @@ func (s *PrivateKeySetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 7)
+		vals := make([]bob.Expression, 8)
 		if s.ID.IsSet() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -218,34 +232,40 @@ func (s *PrivateKeySetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Description.IsUnset() {
-			vals[2] = psql.Arg(s.Description.MustGetNull())
+		if s.UserID.IsSet() {
+			vals[2] = psql.Arg(s.UserID.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.PrivateKey.IsSet() {
-			vals[3] = psql.Arg(s.PrivateKey.MustGet())
+		if !s.Description.IsUnset() {
+			vals[3] = psql.Arg(s.Description.MustGetNull())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.IsGitRelated.IsSet() {
-			vals[4] = psql.Arg(s.IsGitRelated.MustGet())
+		if s.PrivateKey.IsSet() {
+			vals[4] = psql.Arg(s.PrivateKey.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsSet() {
-			vals[5] = psql.Arg(s.CreatedAt.MustGet())
+		if s.IsGitRelated.IsSet() {
+			vals[5] = psql.Arg(s.IsGitRelated.MustGet())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsSet() {
-			vals[6] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsSet() {
+			vals[6] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsSet() {
+			vals[7] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[7] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -257,7 +277,7 @@ func (s PrivateKeySetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s PrivateKeySetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 8)
 
 	if s.ID.IsSet() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -270,6 +290,13 @@ func (s PrivateKeySetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "name")...),
 			psql.Arg(s.Name),
+		}})
+	}
+
+	if s.UserID.IsSet() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "user_id")...),
+			psql.Arg(s.UserID),
 		}})
 	}
 
@@ -536,6 +563,7 @@ func (o PrivateKeySlice) ReloadAll(ctx context.Context, exec bob.Executor) error
 
 type privateKeyJoins[Q dialect.Joinable] struct {
 	typ     string
+	User    modAs[Q, userColumns]
 	Servers modAs[Q, serverColumns]
 }
 
@@ -546,6 +574,20 @@ func (j privateKeyJoins[Q]) aliasedAs(alias string) privateKeyJoins[Q] {
 func buildPrivateKeyJoins[Q dialect.Joinable](cols privateKeyColumns, typ string) privateKeyJoins[Q] {
 	return privateKeyJoins[Q]{
 		typ: typ,
+		User: modAs[Q, userColumns]{
+			c: UserColumns,
+			f: func(to userColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.UserID),
+					))
+				}
+
+				return mods
+			},
+		},
 		Servers: modAs[Q, serverColumns]{
 			c: ServerColumns,
 			f: func(to serverColumns) bob.Mod[Q] {
@@ -561,6 +603,27 @@ func buildPrivateKeyJoins[Q dialect.Joinable](cols privateKeyColumns, typ string
 			},
 		},
 	}
+}
+
+// User starts a query for related objects on users
+func (o *PrivateKey) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	return Users.Query(append(mods,
+		sm.Where(UserColumns.ID.EQ(psql.Arg(o.UserID))),
+	)...)
+}
+
+func (os PrivateKeySlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	pkUserID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkUserID[i] = o.UserID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkUserID), "bytea[]")),
+	))
+
+	return Users.Query(append(mods,
+		sm.Where(psql.Group(UserColumns.ID).OP("IN", PKArgExpr)),
+	)...)
 }
 
 // Servers starts a query for related objects on servers
@@ -590,6 +653,18 @@ func (o *PrivateKey) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "User":
+		rel, ok := retrieved.(*User)
+		if !ok {
+			return fmt.Errorf("privateKey cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.User = rel
+
+		if rel != nil {
+			rel.R.PrivateKeys = PrivateKeySlice{o}
+		}
+		return nil
 	case "Servers":
 		rels, ok := retrieved.(ServerSlice)
 		if !ok {
@@ -609,22 +684,52 @@ func (o *PrivateKey) Preload(name string, retrieved any) error {
 	}
 }
 
-type privateKeyPreloader struct{}
+type privateKeyPreloader struct {
+	User func(...psql.PreloadOption) psql.Preloader
+}
 
 func buildPrivateKeyPreloader() privateKeyPreloader {
-	return privateKeyPreloader{}
+	return privateKeyPreloader{
+		User: func(opts ...psql.PreloadOption) psql.Preloader {
+			return psql.Preload[*User, UserSlice](orm.Relationship{
+				Name: "User",
+				Sides: []orm.RelSide{
+					{
+						From: TableNames.PrivateKeys,
+						To:   TableNames.Users,
+						FromColumns: []string{
+							ColumnNames.PrivateKeys.UserID,
+						},
+						ToColumns: []string{
+							ColumnNames.Users.ID,
+						},
+					},
+				},
+			}, Users.Columns().Names(), opts...)
+		},
+	}
 }
 
 type privateKeyThenLoader[Q orm.Loadable] struct {
+	User    func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	Servers func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildPrivateKeyThenLoader[Q orm.Loadable]() privateKeyThenLoader[Q] {
+	type UserLoadInterface interface {
+		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type ServersLoadInterface interface {
 		LoadServers(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return privateKeyThenLoader[Q]{
+		User: thenLoadBuilder[Q](
+			"User",
+			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadUser(ctx, exec, mods...)
+			},
+		),
 		Servers: thenLoadBuilder[Q](
 			"Servers",
 			func(ctx context.Context, exec bob.Executor, retrieved ServersLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -632,6 +737,53 @@ func buildPrivateKeyThenLoader[Q orm.Loadable]() privateKeyThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadUser loads the privateKey's User into the .R struct
+func (o *PrivateKey) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.User = nil
+
+	related, err := o.User(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.PrivateKeys = PrivateKeySlice{o}
+
+	o.R.User = related
+	return nil
+}
+
+// LoadUser loads the privateKey's User into the .R struct
+func (os PrivateKeySlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	users, err := os.User(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		for _, rel := range users {
+			if o.UserID != rel.ID {
+				continue
+			}
+
+			rel.R.PrivateKeys = append(rel.R.PrivateKeys, o)
+
+			o.R.User = rel
+			break
+		}
+	}
+
+	return nil
 }
 
 // LoadServers loads the privateKey's Servers into the .R struct
@@ -682,6 +834,52 @@ func (os PrivateKeySlice) LoadServers(ctx context.Context, exec bob.Executor, mo
 			o.R.Servers = append(o.R.Servers, rel)
 		}
 	}
+
+	return nil
+}
+
+func attachPrivateKeyUser0(ctx context.Context, exec bob.Executor, count int, privateKey0 *PrivateKey, user1 *User) (*PrivateKey, error) {
+	setter := &PrivateKeySetter{
+		UserID: omit.From(user1.ID),
+	}
+
+	err := privateKey0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachPrivateKeyUser0: %w", err)
+	}
+
+	return privateKey0, nil
+}
+
+func (privateKey0 *PrivateKey) InsertUser(ctx context.Context, exec bob.Executor, related *UserSetter) error {
+	user1, err := Users.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachPrivateKeyUser0(ctx, exec, 1, privateKey0, user1)
+	if err != nil {
+		return err
+	}
+
+	privateKey0.R.User = user1
+
+	user1.R.PrivateKeys = append(user1.R.PrivateKeys, privateKey0)
+
+	return nil
+}
+
+func (privateKey0 *PrivateKey) AttachUser(ctx context.Context, exec bob.Executor, user1 *User) error {
+	var err error
+
+	_, err = attachPrivateKeyUser0(ctx, exec, 1, privateKey0, user1)
+	if err != nil {
+		return err
+	}
+
+	privateKey0.R.User = user1
+
+	user1.R.PrivateKeys = append(user1.R.PrivateKeys, privateKey0)
 
 	return nil
 }

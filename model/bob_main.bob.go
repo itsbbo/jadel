@@ -110,6 +110,7 @@ var ColumnNames = struct {
 	PrivateKeys: privateKeyColumnNames{
 		ID:           "id",
 		Name:         "name",
+		UserID:       "user_id",
 		Description:  "description",
 		PrivateKey:   "private_key",
 		IsGitRelated: "is_git_related",
@@ -119,6 +120,7 @@ var ColumnNames = struct {
 	Projects: projectColumnNames{
 		ID:          "id",
 		Name:        "name",
+		UserID:      "user_id",
 		Description: "description",
 		CreatedAt:   "created_at",
 		UpdatedAt:   "updated_at",
@@ -126,6 +128,7 @@ var ColumnNames = struct {
 	Servers: serverColumnNames{
 		ID:           "id",
 		Name:         "name",
+		UserID:       "user_id",
 		Description:  "description",
 		IP:           "ip",
 		Port:         "port",
@@ -193,6 +196,7 @@ var Preload = getPreloaders()
 
 type preloaders struct {
 	PrivateKey privateKeyPreloader
+	Project    projectPreloader
 	Server     serverPreloader
 	Session    sessionPreloader
 	User       userPreloader
@@ -201,6 +205,7 @@ type preloaders struct {
 func getPreloaders() preloaders {
 	return preloaders{
 		PrivateKey: buildPrivateKeyPreloader(),
+		Project:    buildProjectPreloader(),
 		Server:     buildServerPreloader(),
 		Session:    buildSessionPreloader(),
 		User:       buildUserPreloader(),
@@ -215,6 +220,7 @@ var (
 
 type thenLoaders[Q orm.Loadable] struct {
 	PrivateKey privateKeyThenLoader[Q]
+	Project    projectThenLoader[Q]
 	Server     serverThenLoader[Q]
 	Session    sessionThenLoader[Q]
 	User       userThenLoader[Q]
@@ -223,6 +229,7 @@ type thenLoaders[Q orm.Loadable] struct {
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
 		PrivateKey: buildPrivateKeyThenLoader[Q](),
+		Project:    buildProjectThenLoader[Q](),
 		Server:     buildServerThenLoader[Q](),
 		Session:    buildSessionThenLoader[Q](),
 		User:       buildUserThenLoader[Q](),
@@ -271,6 +278,7 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 
 type joins[Q dialect.Joinable] struct {
 	PrivateKeys joinSet[privateKeyJoins[Q]]
+	Projects    joinSet[projectJoins[Q]]
 	Servers     joinSet[serverJoins[Q]]
 	Sessions    joinSet[sessionJoins[Q]]
 	Users       joinSet[userJoins[Q]]
@@ -287,6 +295,7 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
 		PrivateKeys: buildJoinSet[privateKeyJoins[Q]](PrivateKeyColumns, buildPrivateKeyJoins),
+		Projects:    buildJoinSet[projectJoins[Q]](ProjectColumns, buildProjectJoins),
 		Servers:     buildJoinSet[serverJoins[Q]](ServerColumns, buildServerJoins),
 		Sessions:    buildJoinSet[sessionJoins[Q]](SessionColumns, buildSessionJoins),
 		Users:       buildJoinSet[userJoins[Q]](UserColumns, buildUserJoins),

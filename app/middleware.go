@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
@@ -47,7 +46,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		}
 
 		if errors.Is(err, ErrSessionNotFound) {
-			m.server.SetCookie(w, SessionKey, "", 0 * time.Second)
+			m.server.SetCookie(w, SessionKey, "", -1)
 			m.server.RedirectTo(w, r, "/auth/login")
 			return
 		}

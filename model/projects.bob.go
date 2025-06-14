@@ -5,12 +5,14 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
 	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
+	"github.com/oklog/ulid/v2"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -18,15 +20,21 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/bob/orm"
+	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // Project is an object representing the database table.
 type Project struct {
 	ID          int32            `db:"id,pk" json:"id"`
 	Name        string           `db:"name" json:"name"`
+	UserID      ulid.ULID        `db:"user_id" json:"user_id"`
 	Description null.Val[string] `db:"description" json:"description"`
 	CreatedAt   time.Time        `db:"created_at" json:"created_at"`
 	UpdatedAt   time.Time        `db:"updated_at" json:"updated_at"`
+
+	R projectR `db:"-" json:"-"`
 }
 
 // ProjectSlice is an alias for a slice of pointers to Project.
@@ -39,9 +47,15 @@ var Projects = psql.NewTablex[*Project, ProjectSlice, *ProjectSetter]("", "proje
 // ProjectsQuery is a query on the projects table
 type ProjectsQuery = *psql.ViewQuery[*Project, ProjectSlice]
 
+// projectR is where relationships are stored.
+type projectR struct {
+	User *User `json:"User"` // projects.projects_user_id_fkey
+}
+
 type projectColumnNames struct {
 	ID          string
 	Name        string
+	UserID      string
 	Description string
 	CreatedAt   string
 	UpdatedAt   string
@@ -53,6 +67,7 @@ type projectColumns struct {
 	tableAlias  string
 	ID          psql.Expression
 	Name        psql.Expression
+	UserID      psql.Expression
 	Description psql.Expression
 	CreatedAt   psql.Expression
 	UpdatedAt   psql.Expression
@@ -71,6 +86,7 @@ func buildProjectColumns(alias string) projectColumns {
 		tableAlias:  alias,
 		ID:          psql.Quote(alias, "id"),
 		Name:        psql.Quote(alias, "name"),
+		UserID:      psql.Quote(alias, "user_id"),
 		Description: psql.Quote(alias, "description"),
 		CreatedAt:   psql.Quote(alias, "created_at"),
 		UpdatedAt:   psql.Quote(alias, "updated_at"),
@@ -80,6 +96,7 @@ func buildProjectColumns(alias string) projectColumns {
 type projectWhere[Q psql.Filterable] struct {
 	ID          psql.WhereMod[Q, int32]
 	Name        psql.WhereMod[Q, string]
+	UserID      psql.WhereMod[Q, ulid.ULID]
 	Description psql.WhereNullMod[Q, string]
 	CreatedAt   psql.WhereMod[Q, time.Time]
 	UpdatedAt   psql.WhereMod[Q, time.Time]
@@ -93,6 +110,7 @@ func buildProjectWhere[Q psql.Filterable](cols projectColumns) projectWhere[Q] {
 	return projectWhere[Q]{
 		ID:          psql.Where[Q, int32](cols.ID),
 		Name:        psql.Where[Q, string](cols.Name),
+		UserID:      psql.Where[Q, ulid.ULID](cols.UserID),
 		Description: psql.WhereNull[Q, string](cols.Description),
 		CreatedAt:   psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt:   psql.Where[Q, time.Time](cols.UpdatedAt),
@@ -118,18 +136,22 @@ type projectErrors struct {
 type ProjectSetter struct {
 	ID          omit.Val[int32]      `db:"id,pk" json:"id"`
 	Name        omit.Val[string]     `db:"name" json:"name"`
+	UserID      omit.Val[ulid.ULID]  `db:"user_id" json:"user_id"`
 	Description omitnull.Val[string] `db:"description" json:"description"`
 	CreatedAt   omit.Val[time.Time]  `db:"created_at" json:"created_at"`
 	UpdatedAt   omit.Val[time.Time]  `db:"updated_at" json:"updated_at"`
 }
 
 func (s ProjectSetter) SetColumns() []string {
-	vals := make([]string, 0, 5)
+	vals := make([]string, 0, 6)
 	if s.ID.IsSet() {
 		vals = append(vals, "id")
 	}
 	if s.Name.IsSet() {
 		vals = append(vals, "name")
+	}
+	if s.UserID.IsSet() {
+		vals = append(vals, "user_id")
 	}
 	if !s.Description.IsUnset() {
 		vals = append(vals, "description")
@@ -150,6 +172,9 @@ func (s ProjectSetter) Overwrite(t *Project) {
 	if s.Name.IsSet() {
 		t.Name = s.Name.MustGet()
 	}
+	if s.UserID.IsSet() {
+		t.UserID = s.UserID.MustGet()
+	}
 	if !s.Description.IsUnset() {
 		t.Description = s.Description.MustGetNull()
 	}
@@ -167,7 +192,7 @@ func (s *ProjectSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 5)
+		vals := make([]bob.Expression, 6)
 		if s.ID.IsSet() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -180,22 +205,28 @@ func (s *ProjectSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Description.IsUnset() {
-			vals[2] = psql.Arg(s.Description.MustGetNull())
+		if s.UserID.IsSet() {
+			vals[2] = psql.Arg(s.UserID.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsSet() {
-			vals[3] = psql.Arg(s.CreatedAt.MustGet())
+		if !s.Description.IsUnset() {
+			vals[3] = psql.Arg(s.Description.MustGetNull())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsSet() {
-			vals[4] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsSet() {
+			vals[4] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsSet() {
+			vals[5] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[5] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -207,7 +238,7 @@ func (s ProjectSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s ProjectSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 5)
+	exprs := make([]bob.Expression, 0, 6)
 
 	if s.ID.IsSet() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -220,6 +251,13 @@ func (s ProjectSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "name")...),
 			psql.Arg(s.Name),
+		}})
+	}
+
+	if s.UserID.IsSet() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "user_id")...),
+			psql.Arg(s.UserID),
 		}})
 	}
 
@@ -305,6 +343,7 @@ func (o *Project) Update(ctx context.Context, exec bob.Executor, s *ProjectSette
 		return err
 	}
 
+	o.R = v.R
 	*o = *v
 
 	return nil
@@ -324,7 +363,7 @@ func (o *Project) Reload(ctx context.Context, exec bob.Executor) error {
 	if err != nil {
 		return err
 	}
-
+	o2.R = o.R
 	*o = *o2
 
 	return nil
@@ -371,7 +410,7 @@ func (o ProjectSlice) copyMatchingRows(from ...*Project) {
 			if new.ID != old.ID {
 				continue
 			}
-
+			new.R = old.R
 			o[i] = new
 			break
 		}
@@ -465,6 +504,217 @@ func (o ProjectSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	}
 
 	o.copyMatchingRows(o2...)
+
+	return nil
+}
+
+type projectJoins[Q dialect.Joinable] struct {
+	typ  string
+	User modAs[Q, userColumns]
+}
+
+func (j projectJoins[Q]) aliasedAs(alias string) projectJoins[Q] {
+	return buildProjectJoins[Q](buildProjectColumns(alias), j.typ)
+}
+
+func buildProjectJoins[Q dialect.Joinable](cols projectColumns, typ string) projectJoins[Q] {
+	return projectJoins[Q]{
+		typ: typ,
+		User: modAs[Q, userColumns]{
+			c: UserColumns,
+			f: func(to userColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.UserID),
+					))
+				}
+
+				return mods
+			},
+		},
+	}
+}
+
+// User starts a query for related objects on users
+func (o *Project) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	return Users.Query(append(mods,
+		sm.Where(UserColumns.ID.EQ(psql.Arg(o.UserID))),
+	)...)
+}
+
+func (os ProjectSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	pkUserID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkUserID[i] = o.UserID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkUserID), "bytea[]")),
+	))
+
+	return Users.Query(append(mods,
+		sm.Where(psql.Group(UserColumns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func (o *Project) Preload(name string, retrieved any) error {
+	if o == nil {
+		return nil
+	}
+
+	switch name {
+	case "User":
+		rel, ok := retrieved.(*User)
+		if !ok {
+			return fmt.Errorf("project cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.User = rel
+
+		if rel != nil {
+			rel.R.Projects = ProjectSlice{o}
+		}
+		return nil
+	default:
+		return fmt.Errorf("project has no relationship %q", name)
+	}
+}
+
+type projectPreloader struct {
+	User func(...psql.PreloadOption) psql.Preloader
+}
+
+func buildProjectPreloader() projectPreloader {
+	return projectPreloader{
+		User: func(opts ...psql.PreloadOption) psql.Preloader {
+			return psql.Preload[*User, UserSlice](orm.Relationship{
+				Name: "User",
+				Sides: []orm.RelSide{
+					{
+						From: TableNames.Projects,
+						To:   TableNames.Users,
+						FromColumns: []string{
+							ColumnNames.Projects.UserID,
+						},
+						ToColumns: []string{
+							ColumnNames.Users.ID,
+						},
+					},
+				},
+			}, Users.Columns().Names(), opts...)
+		},
+	}
+}
+
+type projectThenLoader[Q orm.Loadable] struct {
+	User func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+}
+
+func buildProjectThenLoader[Q orm.Loadable]() projectThenLoader[Q] {
+	type UserLoadInterface interface {
+		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+
+	return projectThenLoader[Q]{
+		User: thenLoadBuilder[Q](
+			"User",
+			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadUser(ctx, exec, mods...)
+			},
+		),
+	}
+}
+
+// LoadUser loads the project's User into the .R struct
+func (o *Project) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.User = nil
+
+	related, err := o.User(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Projects = ProjectSlice{o}
+
+	o.R.User = related
+	return nil
+}
+
+// LoadUser loads the project's User into the .R struct
+func (os ProjectSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	users, err := os.User(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		for _, rel := range users {
+			if o.UserID != rel.ID {
+				continue
+			}
+
+			rel.R.Projects = append(rel.R.Projects, o)
+
+			o.R.User = rel
+			break
+		}
+	}
+
+	return nil
+}
+
+func attachProjectUser0(ctx context.Context, exec bob.Executor, count int, project0 *Project, user1 *User) (*Project, error) {
+	setter := &ProjectSetter{
+		UserID: omit.From(user1.ID),
+	}
+
+	err := project0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachProjectUser0: %w", err)
+	}
+
+	return project0, nil
+}
+
+func (project0 *Project) InsertUser(ctx context.Context, exec bob.Executor, related *UserSetter) error {
+	user1, err := Users.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachProjectUser0(ctx, exec, 1, project0, user1)
+	if err != nil {
+		return err
+	}
+
+	project0.R.User = user1
+
+	user1.R.Projects = append(user1.R.Projects, project0)
+
+	return nil
+}
+
+func (project0 *Project) AttachUser(ctx context.Context, exec bob.Executor, user1 *User) error {
+	var err error
+
+	_, err = attachProjectUser0(ctx, exec, 1, project0, user1)
+	if err != nil {
+		return err
+	}
+
+	project0.R.User = user1
+
+	user1.R.Projects = append(user1.R.Projects, project0)
 
 	return nil
 }

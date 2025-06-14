@@ -29,6 +29,7 @@ import (
 type Server struct {
 	ID           ulid.ULID        `db:"id,pk" json:"id"`
 	Name         string           `db:"name" json:"name"`
+	UserID       ulid.ULID        `db:"user_id" json:"user_id"`
 	Description  null.Val[string] `db:"description" json:"description"`
 	IP           string           `db:"ip" json:"ip"`
 	Port         int32            `db:"port" json:"port"`
@@ -53,11 +54,13 @@ type ServersQuery = *psql.ViewQuery[*Server, ServerSlice]
 // serverR is where relationships are stored.
 type serverR struct {
 	PrivateKey *PrivateKey `json:"PrivateKey"` // servers.servers_private_key_id_fkey
+	User       *User       `json:"User"`       // servers.servers_user_id_fkey
 }
 
 type serverColumnNames struct {
 	ID           string
 	Name         string
+	UserID       string
 	Description  string
 	IP           string
 	Port         string
@@ -73,6 +76,7 @@ type serverColumns struct {
 	tableAlias   string
 	ID           psql.Expression
 	Name         psql.Expression
+	UserID       psql.Expression
 	Description  psql.Expression
 	IP           psql.Expression
 	Port         psql.Expression
@@ -95,6 +99,7 @@ func buildServerColumns(alias string) serverColumns {
 		tableAlias:   alias,
 		ID:           psql.Quote(alias, "id"),
 		Name:         psql.Quote(alias, "name"),
+		UserID:       psql.Quote(alias, "user_id"),
 		Description:  psql.Quote(alias, "description"),
 		IP:           psql.Quote(alias, "ip"),
 		Port:         psql.Quote(alias, "port"),
@@ -108,6 +113,7 @@ func buildServerColumns(alias string) serverColumns {
 type serverWhere[Q psql.Filterable] struct {
 	ID           psql.WhereMod[Q, ulid.ULID]
 	Name         psql.WhereMod[Q, string]
+	UserID       psql.WhereMod[Q, ulid.ULID]
 	Description  psql.WhereNullMod[Q, string]
 	IP           psql.WhereMod[Q, string]
 	Port         psql.WhereMod[Q, int32]
@@ -125,6 +131,7 @@ func buildServerWhere[Q psql.Filterable](cols serverColumns) serverWhere[Q] {
 	return serverWhere[Q]{
 		ID:           psql.Where[Q, ulid.ULID](cols.ID),
 		Name:         psql.Where[Q, string](cols.Name),
+		UserID:       psql.Where[Q, ulid.ULID](cols.UserID),
 		Description:  psql.WhereNull[Q, string](cols.Description),
 		IP:           psql.Where[Q, string](cols.IP),
 		Port:         psql.Where[Q, int32](cols.Port),
@@ -154,6 +161,7 @@ type serverErrors struct {
 type ServerSetter struct {
 	ID           omit.Val[ulid.ULID]  `db:"id,pk" json:"id"`
 	Name         omit.Val[string]     `db:"name" json:"name"`
+	UserID       omit.Val[ulid.ULID]  `db:"user_id" json:"user_id"`
 	Description  omitnull.Val[string] `db:"description" json:"description"`
 	IP           omit.Val[string]     `db:"ip" json:"ip"`
 	Port         omit.Val[int32]      `db:"port" json:"port"`
@@ -164,12 +172,15 @@ type ServerSetter struct {
 }
 
 func (s ServerSetter) SetColumns() []string {
-	vals := make([]string, 0, 9)
+	vals := make([]string, 0, 10)
 	if s.ID.IsSet() {
 		vals = append(vals, "id")
 	}
 	if s.Name.IsSet() {
 		vals = append(vals, "name")
+	}
+	if s.UserID.IsSet() {
+		vals = append(vals, "user_id")
 	}
 	if !s.Description.IsUnset() {
 		vals = append(vals, "description")
@@ -202,6 +213,9 @@ func (s ServerSetter) Overwrite(t *Server) {
 	if s.Name.IsSet() {
 		t.Name = s.Name.MustGet()
 	}
+	if s.UserID.IsSet() {
+		t.UserID = s.UserID.MustGet()
+	}
 	if !s.Description.IsUnset() {
 		t.Description = s.Description.MustGetNull()
 	}
@@ -231,7 +245,7 @@ func (s *ServerSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 9)
+		vals := make([]bob.Expression, 10)
 		if s.ID.IsSet() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -244,46 +258,52 @@ func (s *ServerSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Description.IsUnset() {
-			vals[2] = psql.Arg(s.Description.MustGetNull())
+		if s.UserID.IsSet() {
+			vals[2] = psql.Arg(s.UserID.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.IP.IsSet() {
-			vals[3] = psql.Arg(s.IP.MustGet())
+		if !s.Description.IsUnset() {
+			vals[3] = psql.Arg(s.Description.MustGetNull())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.Port.IsSet() {
-			vals[4] = psql.Arg(s.Port.MustGet())
+		if s.IP.IsSet() {
+			vals[4] = psql.Arg(s.IP.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.Username.IsSet() {
-			vals[5] = psql.Arg(s.Username.MustGet())
+		if s.Port.IsSet() {
+			vals[5] = psql.Arg(s.Port.MustGet())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if s.PrivateKeyID.IsSet() {
-			vals[6] = psql.Arg(s.PrivateKeyID.MustGet())
+		if s.Username.IsSet() {
+			vals[6] = psql.Arg(s.Username.MustGet())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsSet() {
-			vals[7] = psql.Arg(s.CreatedAt.MustGet())
+		if s.PrivateKeyID.IsSet() {
+			vals[7] = psql.Arg(s.PrivateKeyID.MustGet())
 		} else {
 			vals[7] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsSet() {
-			vals[8] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsSet() {
+			vals[8] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[8] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsSet() {
+			vals[9] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[9] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -295,7 +315,7 @@ func (s ServerSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s ServerSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 9)
+	exprs := make([]bob.Expression, 0, 10)
 
 	if s.ID.IsSet() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -308,6 +328,13 @@ func (s ServerSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "name")...),
 			psql.Arg(s.Name),
+		}})
+	}
+
+	if s.UserID.IsSet() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "user_id")...),
+			psql.Arg(s.UserID),
 		}})
 	}
 
@@ -589,6 +616,7 @@ func (o ServerSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 type serverJoins[Q dialect.Joinable] struct {
 	typ        string
 	PrivateKey modAs[Q, privateKeyColumns]
+	User       modAs[Q, userColumns]
 }
 
 func (j serverJoins[Q]) aliasedAs(alias string) serverJoins[Q] {
@@ -606,6 +634,20 @@ func buildServerJoins[Q dialect.Joinable](cols serverColumns, typ string) server
 				{
 					mods = append(mods, dialect.Join[Q](typ, PrivateKeys.Name().As(to.Alias())).On(
 						to.ID.EQ(cols.PrivateKeyID),
+					))
+				}
+
+				return mods
+			},
+		},
+		User: modAs[Q, userColumns]{
+			c: UserColumns,
+			f: func(to userColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Users.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.UserID),
 					))
 				}
 
@@ -636,6 +678,27 @@ func (os ServerSlice) PrivateKey(mods ...bob.Mod[*dialect.SelectQuery]) PrivateK
 	)...)
 }
 
+// User starts a query for related objects on users
+func (o *Server) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	return Users.Query(append(mods,
+		sm.Where(UserColumns.ID.EQ(psql.Arg(o.UserID))),
+	)...)
+}
+
+func (os ServerSlice) User(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery {
+	pkUserID := make(pgtypes.Array[ulid.ULID], len(os))
+	for i, o := range os {
+		pkUserID[i] = o.UserID
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkUserID), "bytea[]")),
+	))
+
+	return Users.Query(append(mods,
+		sm.Where(psql.Group(UserColumns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 func (o *Server) Preload(name string, retrieved any) error {
 	if o == nil {
 		return nil
@@ -654,6 +717,18 @@ func (o *Server) Preload(name string, retrieved any) error {
 			rel.R.Servers = ServerSlice{o}
 		}
 		return nil
+	case "User":
+		rel, ok := retrieved.(*User)
+		if !ok {
+			return fmt.Errorf("server cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.User = rel
+
+		if rel != nil {
+			rel.R.Servers = ServerSlice{o}
+		}
+		return nil
 	default:
 		return fmt.Errorf("server has no relationship %q", name)
 	}
@@ -661,6 +736,7 @@ func (o *Server) Preload(name string, retrieved any) error {
 
 type serverPreloader struct {
 	PrivateKey func(...psql.PreloadOption) psql.Preloader
+	User       func(...psql.PreloadOption) psql.Preloader
 }
 
 func buildServerPreloader() serverPreloader {
@@ -682,16 +758,37 @@ func buildServerPreloader() serverPreloader {
 				},
 			}, PrivateKeys.Columns().Names(), opts...)
 		},
+		User: func(opts ...psql.PreloadOption) psql.Preloader {
+			return psql.Preload[*User, UserSlice](orm.Relationship{
+				Name: "User",
+				Sides: []orm.RelSide{
+					{
+						From: TableNames.Servers,
+						To:   TableNames.Users,
+						FromColumns: []string{
+							ColumnNames.Servers.UserID,
+						},
+						ToColumns: []string{
+							ColumnNames.Users.ID,
+						},
+					},
+				},
+			}, Users.Columns().Names(), opts...)
+		},
 	}
 }
 
 type serverThenLoader[Q orm.Loadable] struct {
 	PrivateKey func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	User       func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildServerThenLoader[Q orm.Loadable]() serverThenLoader[Q] {
 	type PrivateKeyLoadInterface interface {
 		LoadPrivateKey(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type UserLoadInterface interface {
+		LoadUser(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return serverThenLoader[Q]{
@@ -699,6 +796,12 @@ func buildServerThenLoader[Q orm.Loadable]() serverThenLoader[Q] {
 			"PrivateKey",
 			func(ctx context.Context, exec bob.Executor, retrieved PrivateKeyLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadPrivateKey(ctx, exec, mods...)
+			},
+		),
+		User: thenLoadBuilder[Q](
+			"User",
+			func(ctx context.Context, exec bob.Executor, retrieved UserLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadUser(ctx, exec, mods...)
 			},
 		),
 	}
@@ -751,6 +854,53 @@ func (os ServerSlice) LoadPrivateKey(ctx context.Context, exec bob.Executor, mod
 	return nil
 }
 
+// LoadUser loads the server's User into the .R struct
+func (o *Server) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.User = nil
+
+	related, err := o.User(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Servers = ServerSlice{o}
+
+	o.R.User = related
+	return nil
+}
+
+// LoadUser loads the server's User into the .R struct
+func (os ServerSlice) LoadUser(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	users, err := os.User(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		for _, rel := range users {
+			if o.UserID != rel.ID {
+				continue
+			}
+
+			rel.R.Servers = append(rel.R.Servers, o)
+
+			o.R.User = rel
+			break
+		}
+	}
+
+	return nil
+}
+
 func attachServerPrivateKey0(ctx context.Context, exec bob.Executor, count int, server0 *Server, privateKey1 *PrivateKey) (*Server, error) {
 	setter := &ServerSetter{
 		PrivateKeyID: omit.From(privateKey1.ID),
@@ -793,6 +943,52 @@ func (server0 *Server) AttachPrivateKey(ctx context.Context, exec bob.Executor, 
 	server0.R.PrivateKey = privateKey1
 
 	privateKey1.R.Servers = append(privateKey1.R.Servers, server0)
+
+	return nil
+}
+
+func attachServerUser0(ctx context.Context, exec bob.Executor, count int, server0 *Server, user1 *User) (*Server, error) {
+	setter := &ServerSetter{
+		UserID: omit.From(user1.ID),
+	}
+
+	err := server0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachServerUser0: %w", err)
+	}
+
+	return server0, nil
+}
+
+func (server0 *Server) InsertUser(ctx context.Context, exec bob.Executor, related *UserSetter) error {
+	user1, err := Users.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachServerUser0(ctx, exec, 1, server0, user1)
+	if err != nil {
+		return err
+	}
+
+	server0.R.User = user1
+
+	user1.R.Servers = append(user1.R.Servers, server0)
+
+	return nil
+}
+
+func (server0 *Server) AttachUser(ctx context.Context, exec bob.Executor, user1 *User) error {
+	var err error
+
+	_, err = attachServerUser0(ctx, exec, 1, server0, user1)
+	if err != nil {
+		return err
+	}
+
+	server0.R.User = user1
+
+	user1.R.Servers = append(user1.R.Servers, server0)
 
 	return nil
 }
