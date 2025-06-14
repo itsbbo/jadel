@@ -1,6 +1,6 @@
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 import DeleteUser from '@/components/delete-user';
@@ -35,7 +35,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        patch("/settings/profile", {
+        patch('/settings/profile', {
             preserveScroll: true,
         });
     };

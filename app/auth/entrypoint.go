@@ -13,16 +13,16 @@ type Repository interface {
 }
 
 type Deps struct {
-	server *app.Server
+	server     *app.Server
 	middleware *app.Middleware
-	repo   Repository
+	repo       Repository
 }
 
 func New(server *app.Server, middleware *app.Middleware, repo Repository) *Deps {
 	return &Deps{
-		server: server,
+		server:     server,
 		middleware: middleware,
-		repo:   repo,
+		repo:       repo,
 	}
 }
 

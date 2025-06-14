@@ -34,6 +34,12 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionID, err := r.Cookie(SessionKey)
 		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				m.server.RedirectTo(w, r, "/auth/login")
+				return
+			}
+
+			slog.Error("Cannot get session cookie", slog.Any("error", err))
 			m.server.RedirectTo(w, r, "/auth/login")
 			return
 		}

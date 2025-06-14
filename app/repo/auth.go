@@ -121,7 +121,7 @@ func (d *Auth) FindUserBySession(ctx context.Context, sessionID string) (*model.
 	user, err := model.Users.Query(
 		model.SelectJoins.Users.InnerJoin.Sessions,
 		model.SelectWhere.Sessions.ID.EQ(sessionID),
-		model.SelectWhere.Sessions.ExpiredAt.LT(time.Now()),
+		model.SelectWhere.Sessions.ExpiredAt.GT(time.Now()),
 	).One(ctx, d.db)
 
 	if err == nil {
