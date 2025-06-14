@@ -4,6 +4,7 @@ migrate:
 		$(if $(version), -version $(version)) \
 		$(if $(limit), -limit $(limit)) \
 		$(if $(dryrun), -dryrun)
+	@"$(MAKE)" bob
 
 migrate-status:
 	@sql-migrate status -config="config.yaml" -env="db"
@@ -28,6 +29,7 @@ migrate-redo:
 	@echo "Reapply last migration..."
 	@sql-migrate redo -config="config.yaml" -env="db" \
 		$(if $(dryrun), -dryrun)
+	@"$(MAKE)" bob
 
 bob:
 	@echo "Running bob psql model codegen..."
