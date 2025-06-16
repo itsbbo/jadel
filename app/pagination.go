@@ -1,80 +1,85 @@
 package app
 
 import (
-	"net/url"
+	"slices"
 
 	"github.com/itsbbo/jadel/gonertia"
+	"github.com/oklog/ulid/v2"
 )
 
-type PaginationMode string
-
 const (
-	PaginationPrev PaginationMode = "prev"
-	PaginationNext PaginationMode = "next"
-
 	PaginationDefaultLimit = 10
 )
 
-func ToPaginationMode(mode string) PaginationMode {
-	switch mode {
-	case string(PaginationPrev):
-		return PaginationPrev
-	case string(PaginationNext):
-		return PaginationNext
-	default:
-		return PaginationNext
-	}
+type PaginationRequest struct {
+	Limit  int
+	PrevID ulid.ULID
+	NextID ulid.ULID
+	UserID ulid.ULID
 }
 
 type HasID interface {
 	GetID() string
 }
 
-func ToPaginationProps[T HasID](path string, limit int, items []T) gonertia.Props {
+func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Props {
+	limit := param.Limit
+
 	if len(items) == 0 {
 		return gonertia.Props{
-			"items":       items,
-			"perPage":     limit,
-			"prevPageURL": "",
-			"nextPageURL": "",
+			"items":  []T{},
+			"prevId": "",
+			"nextId": "",
 		}
 	}
 
-	if len(items) < limit {
-		q := url.Values{}
-		q.Set("mode", string(PaginationPrev))
-		q.Set("id", items[0].GetID())
+	// no prev and next = first page
+	if param.PrevID.IsZero() && param.NextID.IsZero() {
+		if len(items) > limit {
+			items = items[:limit]
 
-		prevURL := url.URL{Path: path, RawQuery: q.Encode()}
+			return gonertia.Props{
+				"items":  items,
+				"prevId": "",
+				"nextId": items[len(items)-1].GetID(),
+			}
+		}
+	}
+
+	// next mode
+	if param.PrevID.IsZero() {
+		if len(items) > limit {
+			items = items[:limit]
+
+			return gonertia.Props{
+				"items":  items,
+				"prevId": "",
+				"nextId": items[len(items)-1].GetID(),
+			}
+		}
 
 		return gonertia.Props{
-			"items":       items,
-			"perPage":     limit,
-			"prevPageURL": prevURL.String(),
-			"nextPageURL": "",
+			"items":  items,
+			"prevId": items[0].GetID(),
+			"nextId": "",
 		}
 	}
 
-	prevQuery := url.Values{}
-	prevQuery.Set("mode", string(PaginationPrev))
-	prevQuery.Set("id", items[0].GetID())
-	prevURL := url.URL{
-		Path:     path,
-		RawQuery: prevQuery.Encode(),
-	}
+	// prev mode
+	slices.Reverse(items)
+	if len(items) > limit {
+		items = items[:limit]
 
-	nextQuery := url.Values{}
-	nextQuery.Set("mode", string(PaginationNext))
-	nextQuery.Set("id", items[len(items)-1].GetID())
-	nextURL := url.URL{
-		Path:     path,
-		RawQuery: nextQuery.Encode(),
+		return gonertia.Props{
+			"items":  items,
+			"prevId": items[0].GetID(),
+			"nextId": "",
+		}
 	}
 
 	return gonertia.Props{
-		"items":       items,
-		"perPage":     limit,
-		"prevPageURL": prevURL.String(),
-		"nextPageURL": nextURL.String(),
+		"items":  items,
+		"prevId": "",
+		"nextId": items[len(items)-1].GetID(),
 	}
 }

@@ -6,6 +6,7 @@ require (
 	github.com/Oudwins/zog v0.21.1
 	github.com/aarondl/opt v0.0.0-20230114172057-b91f370c41f0
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/goforj/godump v1.1.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/samber/oops v1.18.1

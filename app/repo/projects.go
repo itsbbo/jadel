@@ -10,7 +10,6 @@ import (
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
 	"github.com/samber/oops"
-	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/drivers/pgx"
 )
@@ -25,39 +24,35 @@ func NewProject(db pgx.Pool) *Project {
 	}
 }
 
-func (p *Project) GetProjectIndex(ctx context.Context, param projects.IndexRequest) (model.ProjectSlice, error) {
-	if param.TrackID.IsZero() {
-		return model.Projects.Query(
-			sm.Columns(
-				model.ColumnNames.Projects.ID,
-				model.ColumnNames.Projects.Name,
-				model.ColumnNames.Projects.Description,
-			),
-			sm.OrderBy(model.ColumnNames.Projects.Name).Asc(),
-			sm.Limit(param.Limit),
-		).All(ctx, p.db)
-	}
-
-	trackID := model.SelectWhere.Projects.ID.GT(param.UserID)
-	withUserID := model.SelectWhere.Projects.UserID.EQ(param.UserID)
-	orderBy := sm.OrderBy(model.ColumnNames.Projects.Name).Asc()
-	limit := sm.Limit(param.Limit)
-
-	if param.PaginationMode == app.PaginationPrev {
-		trackID = model.SelectWhere.Projects.ID.LT(param.UserID)
-		orderBy = sm.OrderBy(model.ColumnNames.Projects.Name).Desc()
-	}
-
-	return model.Projects.Query(
-		psql.WhereAnd(trackID, withUserID),
+func (p *Project) GetProjectIndex(ctx context.Context, param app.PaginationRequest) (model.ProjectSlice, error) {
+	q := model.Projects.Query(
 		sm.Columns(
 			model.ColumnNames.Projects.ID,
 			model.ColumnNames.Projects.Name,
 			model.ColumnNames.Projects.Description,
 		),
-		orderBy,
-		limit,
-	).All(ctx, p.db)
+		model.SelectWhere.Projects.UserID.EQ(param.UserID),
+		sm.Limit(param.Limit),
+	)
+
+	if !param.NextID.IsZero() {
+		q.Apply(
+			model.SelectWhere.Projects.ID.LT(param.NextID),
+			sm.OrderBy(model.ColumnNames.Projects.ID).Desc(),
+		)
+		return q.All(ctx, p.db)
+	}
+
+	if !param.PrevID.IsZero() {
+		q.Apply(
+			model.SelectWhere.Projects.ID.GT(param.PrevID),
+			sm.OrderBy(model.ColumnNames.Projects.ID).Asc(),
+		)
+		return q.All(ctx, p.db)
+	}
+
+	q.Apply(sm.OrderBy(model.ColumnNames.Projects.ID).Desc())
+	return q.All(ctx, p.db)
 }
 
 func (p *Project) CreateProject(ctx context.Context, param projects.CreateProjectParam) (*model.Project, error) {

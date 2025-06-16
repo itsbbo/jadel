@@ -7,6 +7,7 @@ import { BreadcrumbItem, Pagination } from '@/types';
 import { Project } from '@/types/entity';
 import { Head, router } from '@inertiajs/react';
 import AddProjects from './components/add-projects';
+import { useMemo } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -17,9 +18,25 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface Props extends Pagination<Project> {}
 
-export default function Index({ items, prevPageURL, nextPageURL }: Props) {
+export default function Index({ items, prevId, nextId }: Props) {
+    const prevPageURL = useMemo(() => {
+        if(prevId) {
+            return `/projects?prevId=${prevId}`
+        }
+
+        return ""
+    }, [prevId])
+
+    const nextPageURL = useMemo(() => {
+        if(nextId) {
+            return `/projects?nextId=${nextId}`
+        }
+
+        return ""
+    }, [nextId])
+
     const handleOnClickProject = (id: string) => {
-        router.visit(`/project/${id}`);
+        router.get(`/project/${id}`);
     };
 
     return (
@@ -54,7 +71,7 @@ export default function Index({ items, prevPageURL, nextPageURL }: Props) {
                                     </Card>
                                 ))}
                             </div>
-                            <PaginationControls prevPageURL={prevPageURL} nextPageURL={nextPageURL} />
+                            <PaginationControls nextPageURL={nextPageURL} prevPageURL={prevPageURL} />
                         </Else>
                     </If>
                 </section>

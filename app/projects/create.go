@@ -40,12 +40,12 @@ func (d *Deps) CreateProject(w http.ResponseWriter, r *http.Request) {
 		Description: request.Description,
 	}
 
-	project, err := d.repo.CreateProject(r.Context(), param)
+	_, err := d.repo.CreateProject(r.Context(), param)
 	if err != nil {
 		slog.Error("Error creating project", slog.Any("error", err))
 		d.Index(w, d.server.AddInternalErrorMsg(w, r))
 		return
 	}
 
-	d.server.RedirectTo(w, r, "/projects/"+project.ID.String())
+	d.server.RedirectTo(w, r, "/projects")
 }

@@ -27,6 +27,6 @@ export interface SharedData {
 export interface Pagination<T> {
     items: T[];
     perPage: number;
-    prevPageURL?: string;
-    nextPageURL?: string;
+    prevId?: string;
+    nextId?: string;
 }
