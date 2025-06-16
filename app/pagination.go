@@ -53,7 +53,7 @@ func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Pro
 
 			return gonertia.Props{
 				"items":  items,
-				"prevId": "",
+				"prevId": items[0].GetID(),
 				"nextId": items[len(items)-1].GetID(),
 			}
 		}
@@ -73,7 +73,7 @@ func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Pro
 		return gonertia.Props{
 			"items":  items,
 			"prevId": items[0].GetID(),
-			"nextId": "",
+			"nextId": items[len(items)-1].GetID(),
 		}
 	}
 
