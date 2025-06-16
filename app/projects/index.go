@@ -25,6 +25,10 @@ func (d *Deps) Index(w http.ResponseWriter, r *http.Request) {
 		nextId = ulid.Zero
 	}
 
+	if !prevId.IsZero() && !nextId.IsZero() {
+		nextId, prevId = ulid.Zero, ulid.Zero
+	}
+
 	limit := app.PaginationDefaultLimit
 
 	user := app.CurrentUser(r)

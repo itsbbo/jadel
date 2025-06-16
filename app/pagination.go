@@ -1,8 +1,6 @@
 package app
 
 import (
-	"slices"
-
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/oklog/ulid/v2"
 )
@@ -24,8 +22,11 @@ type HasID interface {
 
 func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Props {
 	limit := param.Limit
+	if limit <= 0 {
+		limit = PaginationDefaultLimit
+	}
 
-	if len(items) == 0 {
+	if len(items) == 0 || (!param.PrevID.IsZero()) && (!param.NextID.IsZero()) {
 		return gonertia.Props{
 			"items":  []T{},
 			"prevId": "",
@@ -43,6 +44,12 @@ func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Pro
 				"prevId": "",
 				"nextId": items[len(items)-1].GetID(),
 			}
+		}
+
+		return gonertia.Props{
+			"items":  items,
+			"prevId": "",
+			"nextId": "",
 		}
 	}
 
@@ -66,9 +73,8 @@ func ToPaginationProps[T HasID](param PaginationRequest, items []T) gonertia.Pro
 	}
 
 	// prev mode
-	slices.Reverse(items)
 	if len(items) > limit {
-		items = items[:limit]
+		items = items[1:]
 
 		return gonertia.Props{
 			"items":  items,

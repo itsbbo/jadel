@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
@@ -35,24 +36,33 @@ func (p *Project) GetProjectIndex(ctx context.Context, param app.PaginationReque
 		sm.Limit(param.Limit),
 	)
 
-	if !param.NextID.IsZero() {
-		q.Apply(
-			model.SelectWhere.Projects.ID.LT(param.NextID),
-			sm.OrderBy(model.ColumnNames.Projects.ID).Desc(),
-		)
-		return q.All(ctx, p.db)
-	}
-
-	if !param.PrevID.IsZero() {
+	switch {
+	case !param.PrevID.IsZero():
 		q.Apply(
 			model.SelectWhere.Projects.ID.GT(param.PrevID),
 			sm.OrderBy(model.ColumnNames.Projects.ID).Asc(),
 		)
-		return q.All(ctx, p.db)
+
+	case !param.NextID.IsZero():
+		q.Apply(
+			model.SelectWhere.Projects.ID.LT(param.NextID),
+			sm.OrderBy(model.ColumnNames.Projects.ID).Desc(),
+		)
+
+	default:
+		q.Apply(sm.OrderBy(model.ColumnNames.Projects.ID).Desc())
 	}
 
-	q.Apply(sm.OrderBy(model.ColumnNames.Projects.ID).Desc())
-	return q.All(ctx, p.db)
+	results, err := q.All(ctx, p.db)
+	if err != nil {
+		return nil, oops.In("GetProjectIndex").With("param", param).Wrap(err)
+	}
+
+	if !param.PrevID.IsZero() {
+		slices.Reverse(results)
+	}
+	
+	return results, nil
 }
 
 func (p *Project) CreateProject(ctx context.Context, param projects.CreateProjectParam) (*model.Project, error) {
