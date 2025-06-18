@@ -6,8 +6,8 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, Pagination } from '@/types';
 import { Project } from '@/types/entity';
 import { Head, router } from '@inertiajs/react';
-import AddProjects from './components/add-projects';
 import { useMemo } from 'react';
+import AddProjects from './components/add-projects';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,20 +20,20 @@ interface Props extends Pagination<Project> {}
 
 export default function Index({ items, prevId, nextId }: Props) {
     const prevPageURL = useMemo(() => {
-        if(prevId) {
-            return `/projects?prevId=${prevId}`
+        if (prevId) {
+            return `/projects?prevId=${prevId}`;
         }
 
-        return ""
-    }, [prevId])
+        return '';
+    }, [prevId]);
 
     const nextPageURL = useMemo(() => {
-        if(nextId) {
-            return `/projects?nextId=${nextId}`
+        if (nextId) {
+            return `/projects?nextId=${nextId}`;
         }
 
-        return ""
-    }, [nextId])
+        return '';
+    }, [nextId]);
 
     const handleOnClickProject = (id: string) => {
         router.get(`/projects/${id}/environments`);

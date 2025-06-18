@@ -9,6 +9,7 @@ import (
 	"github.com/itsbbo/jadel/app/auth"
 	"github.com/itsbbo/jadel/app/dashboard"
 	"github.com/itsbbo/jadel/app/projects"
+	"github.com/itsbbo/jadel/app/projects/resources"
 	"github.com/itsbbo/jadel/app/repo"
 	"github.com/itsbbo/jadel/app/settings"
 )
@@ -44,6 +45,7 @@ func main() {
 	dashboard.New(server, middleware, dashboardRepo).InitRoutes()
 	settings.New(server, middleware, settingsRepo).InitRoutes()
 	projects.New(server, middleware, projectsRepo).InitRoutes()
+	resources.New(server, middleware).InitRoutes()
 
 	if config.Server.Debug {
 		server.PrintRoutes()

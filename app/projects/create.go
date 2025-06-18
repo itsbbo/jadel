@@ -2,6 +2,7 @@ package projects
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -40,12 +41,12 @@ func (d *Deps) CreateProject(w http.ResponseWriter, r *http.Request) {
 		Description: request.Description,
 	}
 
-	_, err := d.repo.CreateProject(r.Context(), param)
+	project, err := d.repo.CreateProject(r.Context(), param)
 	if err != nil {
 		slog.Error("Error creating project", slog.Any("error", err))
 		d.Index(w, d.server.AddInternalErrorMsg(w, r))
 		return
 	}
 
-	d.server.RedirectTo(w, r, "/projects")
+	d.server.RedirectTo(w, r, fmt.Sprintf("/projects/%s/environments", project.ID.String()))
 }

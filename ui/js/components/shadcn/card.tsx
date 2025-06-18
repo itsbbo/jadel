@@ -6,12 +6,16 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
     return (
         <div
             data-slot="card"
-            className={cn('bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm', className)}
+            className={cn(
+                'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
+                'group cursor-pointer transition-all duration-200',
+                'hover:border-primary/50 hover:bg-muted/50 hover:shadow-md hover:scale-[1.02] hover:opacity-95 hover:-translate-y-0.5',
+                className
+            )}
             {...props}
         />
     );
 }
-
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
     return (
         <div

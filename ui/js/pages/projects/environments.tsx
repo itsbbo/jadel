@@ -1,6 +1,6 @@
 import { Else, If } from '@/components/condition';
 import Heading from '@/components/heading';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Card, CardHeader, CardTitle } from '@/components/shadcn/card';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Environment, Project } from '@/types/entity';
@@ -15,8 +15,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface Props {
-    project: Project
-    envs: Environment[]
+    project: Project;
+    envs: Environment[];
 }
 
 export default function Index({ project, envs }: Props) {
