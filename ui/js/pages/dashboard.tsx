@@ -40,7 +40,7 @@ export default function Dashboard({ projects, servers }: Props) {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <If condition={projects?.length > 0}>
                             {projects?.map((project) => (
-                                <Card key={project.id} className="transition-shadow hover:shadow-md">
+                                <Card key={project.id}>
                                     <CardHeader>
                                         <CardTitle className="text-lg">{project.name}</CardTitle>
                                     </CardHeader>

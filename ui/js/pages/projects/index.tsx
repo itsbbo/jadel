@@ -57,7 +57,6 @@ export default function Index({ items, prevId, nextId }: Props) {
                                 {items?.map((project) => (
                                     <Card
                                         key={project.id}
-                                        className="cursor-pointer transition-shadow hover:shadow-md"
                                         onClick={() => handleOnClickProject(project.id)}
                                     >
                                         <CardHeader>

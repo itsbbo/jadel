@@ -42,7 +42,6 @@ export default function Index({ project, envs }: Props) {
                                 {envs?.map((env) => (
                                     <Card
                                         key={env.id}
-                                        className="cursor-pointer transition-shadow hover:shadow-md"
                                         onClick={() => handleOnClickProject(env.id)}
                                     >
                                         <CardHeader>
