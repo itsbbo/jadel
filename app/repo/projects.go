@@ -2,6 +2,8 @@ package repo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"slices"
 
 	"github.com/aarondl/opt/omit"
@@ -61,7 +63,7 @@ func (p *Project) GetProjectIndex(ctx context.Context, param app.PaginationReque
 	if !param.PrevID.IsZero() {
 		slices.Reverse(results)
 	}
-	
+
 	return results, nil
 }
 
@@ -105,4 +107,33 @@ func (p *Project) CreateProject(ctx context.Context, param projects.CreateProjec
 	}
 
 	return project, nil
+}
+
+func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.ULID) (*model.Project, model.EnvironmentSlice, error) {
+	project, err := model.Projects.Query(
+		sm.Columns(model.ColumnNames.Projects.ID, model.ColumnNames.Projects.Name),
+		model.SelectWhere.Projects.UserID.EQ(userID),
+		model.SelectWhere.Projects.ID.EQ(projectID),
+	).One(ctx, p.db)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil, nil
+		}
+
+		return nil, nil, oops.In("ProjectQuery").With("projectID", projectID.String()).Wrap(err)
+	}
+
+	environments, err := project.Environments(
+		sm.Columns(model.ColumnNames.Environments.ID, model.ColumnNames.Environments.Name),
+	).All(ctx, p.db)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return project, nil, nil
+		}
+
+		return nil, nil, oops.In("ProjectEnvironments").With("projectID", projectID.String()).Wrap(err)
+	}
+
+	return project, environments, nil
 }

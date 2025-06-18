@@ -19,6 +19,9 @@ var testDB bob.Transactor
 // Make sure the type Environment runs hooks after queries
 var _ bob.HookableType = &models.Environment{}
 
+// Make sure the type Foo runs hooks after queries
+var _ bob.HookableType = &models.Foo{}
+
 // Make sure the type Migration runs hooks after queries
 var _ bob.HookableType = &models.Migration{}
 

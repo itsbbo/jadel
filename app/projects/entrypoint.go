@@ -8,6 +8,7 @@ import (
 type Repository interface {
 	GetProjectIndexQuery
 	CreateProjectMutator
+	AllEnvironmentsQuery
 }
 
 type Deps struct {
@@ -30,5 +31,6 @@ func (d *Deps) InitRoutes() {
 
 		r.Get("/", d.Index)
 		r.Post("/", d.CreateProject)
+		r.Get("/{project}/environments", d.Environments)
 	})
 }

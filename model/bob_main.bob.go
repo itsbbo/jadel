@@ -20,6 +20,7 @@ import (
 
 var TableNames = struct {
 	Environments          string
+	Foos                  string
 	Migrations            string
 	PGStatStatements      string
 	PGStatStatementsInfos string
@@ -30,6 +31,7 @@ var TableNames = struct {
 	Users                 string
 }{
 	Environments:          "environments",
+	Foos:                  "foo",
 	Migrations:            "migrations",
 	PGStatStatements:      "pg_stat_statements",
 	PGStatStatementsInfos: "pg_stat_statements_info",
@@ -42,6 +44,7 @@ var TableNames = struct {
 
 var ColumnNames = struct {
 	Environments          environmentColumnNames
+	Foos                  fooColumnNames
 	Migrations            migrationColumnNames
 	PGStatStatements      pgStatStatementColumnNames
 	PGStatStatementsInfos pgStatStatementsInfoColumnNames
@@ -57,6 +60,10 @@ var ColumnNames = struct {
 		ProjectID: "project_id",
 		CreatedAt: "created_at",
 		UpdatedAt: "updated_at",
+	},
+	Foos: fooColumnNames{
+		ID:   "id",
+		Name: "name",
 	},
 	Migrations: migrationColumnNames{
 		ID:        "id",
@@ -173,6 +180,7 @@ var (
 
 func Where[Q psql.Filterable]() struct {
 	Environments          environmentWhere[Q]
+	Foos                  fooWhere[Q]
 	Migrations            migrationWhere[Q]
 	PGStatStatements      pgStatStatementWhere[Q]
 	PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
@@ -184,6 +192,7 @@ func Where[Q psql.Filterable]() struct {
 } {
 	return struct {
 		Environments          environmentWhere[Q]
+		Foos                  fooWhere[Q]
 		Migrations            migrationWhere[Q]
 		PGStatStatements      pgStatStatementWhere[Q]
 		PGStatStatementsInfos pgStatStatementsInfoWhere[Q]
@@ -194,6 +203,7 @@ func Where[Q psql.Filterable]() struct {
 		Users                 userWhere[Q]
 	}{
 		Environments:          buildEnvironmentWhere[Q](EnvironmentColumns),
+		Foos:                  buildFooWhere[Q](FooColumns),
 		Migrations:            buildMigrationWhere[Q](MigrationColumns),
 		PGStatStatements:      buildPGStatStatementWhere[Q](PGStatStatementColumns),
 		PGStatStatementsInfos: buildPGStatStatementsInfoWhere[Q](PGStatStatementsInfoColumns),

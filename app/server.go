@@ -94,6 +94,10 @@ func (s *Server) Back(w http.ResponseWriter, r *http.Request) {
 	s.inertia.Back(w, r)
 }
 
+func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request) {
+	s.RenderUI(w, r, "error/not-found", NoUIProps)
+}
+
 func (s *Server) PrintRoutes() {
 	chi.Walk(s.Mux, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		slog.Info("Route", slog.String("method", method), slog.String("route", route))
