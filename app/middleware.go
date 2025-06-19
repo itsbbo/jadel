@@ -6,27 +6,37 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/goforj/godump"
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
 	ErrSessionNotFound = errors.New("session not found")
+	ErrEnvNotFound     = errors.New("env not found")
 )
 
-type Repository interface {
+type FindSessionQuery interface {
 	FindUserBySession(ctx context.Context, sessionID string) (*model.User, error)
+}
+
+type FindSpesificEnvironmentsQuery interface {
+	FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (*model.Environment, error)
 }
 
 type Middleware struct {
 	server *Server
-	repo   Repository
+	auth   FindSessionQuery
+	env    FindSpesificEnvironmentsQuery
 }
 
-func NewMiddleware(server *Server, repo Repository) *Middleware {
+func NewMiddleware(server *Server, auth FindSessionQuery, env FindSpesificEnvironmentsQuery) *Middleware {
 	return &Middleware{
 		server: server,
-		repo:   repo,
+		auth:   auth,
+		env:    env,
 	}
 }
 
@@ -44,7 +54,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := m.repo.FindUserBySession(r.Context(), sessionID.Value)
+		user, err := m.auth.FindUserBySession(r.Context(), sessionID.Value)
 		if err == nil {
 			ctx := gonertia.SetProp(r.Context(), UserKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -78,6 +88,42 @@ func (m *Middleware) RedirectIfAuthenticated(next http.Handler) http.Handler {
 		}
 
 		m.server.RedirectTo(w, r, "/dashboard")
+		return
+	})
+}
+
+func (m *Middleware) LoadEnvironments(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		projectID, err := ulid.Parse(chi.URLParam(r, "project"))
+		if err != nil {
+			m.server.RenderNotFound(w, r)
+			return
+		}
+
+		envID, err := ulid.Parse(chi.URLParam(r, "environment"))
+		if err != nil {
+			m.server.RenderNotFound(w, r)
+			return
+		}
+
+		user := CurrentUser(r)
+
+		env, err := m.env.FindSpesificEnvironments(r.Context(), user.ID, projectID, envID)
+		if err == nil {
+			godump.Dump(env)
+
+			ctx := context.WithValue(r.Context(), EnvKey, env)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		if errors.Is(err, ErrEnvNotFound) {
+			m.server.RenderNotFound(w, r)
+			return
+		}
+
+		slog.Error("cannot retrieved environments", slog.Any("error", err))
+		m.server.Back(w, m.server.AddInternalErrorMsg(w, r))
 		return
 	})
 }

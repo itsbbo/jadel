@@ -39,7 +39,7 @@ func main() {
 	settingsRepo := repo.NewSettings(database)
 	projectsRepo := repo.NewProject(database)
 
-	middleware := app.NewMiddleware(server, authRepo)
+	middleware := app.NewMiddleware(server, authRepo, projectsRepo)
 
 	auth.New(server, middleware, authRepo).InitRoutes()
 	dashboard.New(server, middleware, dashboardRepo).InitRoutes()

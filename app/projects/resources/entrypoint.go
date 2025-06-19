@@ -19,7 +19,8 @@ func New(server *app.Server, middleware *app.Middleware) *Deps {
 
 func (d *Deps) InitRoutes() {
 	d.server.Route("/projects/{project}/environments/{environment}", func(r chi.Router) {
-		r.Use(d.middleware.Auth)
+		r.Use(d.middleware.Auth, d.middleware.LoadEnvironments)
+
 		r.Get("/create", d.CreateUI)
 	})
 }

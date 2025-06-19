@@ -25,14 +25,14 @@ func createMockItems(count int) []MockItem {
 
 func TestToPaginationProps(t *testing.T) {
 	tests := []struct {
-		name           string
-		param          PaginationRequest
-		itemCount      int
-		expectedLen    int
-		hasPrevID      bool
-		hasNextID      bool
-		prevIDIndex    int  // -1 means no prevId
-		nextIDIndex    int  // -1 means no nextId
+		name        string
+		param       PaginationRequest
+		itemCount   int
+		expectedLen int
+		hasPrevID   bool
+		hasNextID   bool
+		prevIDIndex int // -1 means no prevId
+		nextIDIndex int // -1 means no nextId
 	}{
 		{
 			name: "Empty items",

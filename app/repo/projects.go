@@ -137,3 +137,31 @@ func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.UL
 
 	return project, environments, nil
 }
+
+func (p *Project) FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (*model.Environment, error) {
+	project, err := model.Projects.Query().One(ctx, p.db)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, oops.
+				In("FindSpesificEnvironments - model.Projects.Query()").
+				With("userID", userID.String()).
+				With("envID", envID.String()).
+				Wrap(err)
+		}
+	}
+
+	err = project.LoadEnvironments(ctx, p.db, model.SelectWhere.Environments.ID.EQ(envID))
+	if err == nil {
+		env := *project.R.Environments[0]
+		copyProject := *project
+		copyProject.R.Environments = nil
+		env.R.Project = &copyProject
+		return &env, nil
+	}
+
+	return nil, oops.
+		In("project.LoadEnvironments").
+		With("userID", userID.String()).
+		With("envID", envID.String()).
+		Wrap(err)
+}

@@ -13,6 +13,7 @@ const (
 	CSRFHeaderName = "X-XSRF-TOKEN"
 	SessionKey     = "jadel_session"
 	UserKey        = "user"
+	EnvKey         = "env"
 	SessionTime    = 3 * time.Hour
 )
 
