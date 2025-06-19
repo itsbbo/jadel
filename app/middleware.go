@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/goforj/godump"
 	"github.com/itsbbo/jadel/gonertia"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
@@ -110,8 +109,6 @@ func (m *Middleware) LoadEnvironments(next http.Handler) http.Handler {
 
 		env, err := m.env.FindSpesificEnvironments(r.Context(), user.ID, projectID, envID)
 		if err == nil {
-			godump.Dump(env)
-
 			ctx := context.WithValue(r.Context(), EnvKey, env)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return

@@ -114,19 +114,23 @@ func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.UL
 func (p *Project) FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error) {
 	var env model.Environment
 
-	_, err := p.db.NewSelect().
+	err := p.db.NewSelect().
 		Model(&env).
 		Column("id", "name").
 		Relation("Project", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.Column("id", "name").
-				Where("id = ?", projectID).
-				Where("user_id = ?", userID)
+				Where("project.id = ?", projectID).
+				Where("project.user_id = ?", userID)
 		}).
-		Where("id = ?", envID).
-		Exec(ctx)
+		Where("environment.id = ?", envID).
+		Scan(ctx)
 
 	if err == nil {
 		return env, nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return env, app.ErrEnvNotFound
 	}
 
 	return env, oops.

@@ -21,7 +21,7 @@ interface Props {
 
 export default function Index({ project, envs }: Props) {
     const handleOnClickProject = (id: string) => {
-        router.get(`/project/${project.id}/environments/${id}`);
+        router.visit(`/projects/${project.id}/environments/${id}`);
     };
 
     return (

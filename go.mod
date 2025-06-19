@@ -5,7 +5,6 @@ go 1.24.1
 require (
 	github.com/Oudwins/zog v0.21.1
 	github.com/go-chi/chi/v5 v5.2.1
-	github.com/goforj/godump v1.1.0
 	github.com/guregu/null/v6 v6.0.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/oklog/ulid/v2 v2.1.1
