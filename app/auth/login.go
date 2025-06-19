@@ -31,7 +31,7 @@ type InsertSessionParam struct {
 }
 
 type FindByEmailPasswordQuery interface {
-	FindByEmailPassword(ctx context.Context, email string, password string) (*model.User, error)
+	FindByEmailPassword(ctx context.Context, email string, password string) (model.User, error)
 }
 
 type InsertSessionMutator interface {

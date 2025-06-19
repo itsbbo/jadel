@@ -17,8 +17,8 @@ type Deps struct {
 }
 
 type Repository interface {
-	GetFiveLatestProjects(ctx context.Context) (model.ProjectSlice, error)
-	GetFiveLatestServers(ctx context.Context) (model.ServerSlice, error)
+	GetFiveLatestProjects(ctx context.Context) ([]model.Project, error)
+	GetFiveLatestServers(ctx context.Context) ([]model.Server, error)
 }
 
 func New(server *app.Server, middleware *app.Middleware, repo Repository) *Deps {

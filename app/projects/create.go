@@ -16,13 +16,13 @@ type CreateProjectRequest struct {
 }
 
 type CreateProjectParam struct {
-	User        *model.User
+	User        model.User
 	Name        string
 	Description string
 }
 
 type CreateProjectMutator interface {
-	CreateProject(ctx context.Context, param CreateProjectParam) (*model.Project, error)
+	CreateProject(ctx context.Context, param CreateProjectParam) (model.Project, error)
 }
 
 func (d *Deps) CreateProject(w http.ResponseWriter, r *http.Request) {

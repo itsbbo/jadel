@@ -4,30 +4,48 @@ import (
 	"context"
 
 	"github.com/itsbbo/jadel/model"
-	"github.com/stephenafamo/bob/dialect/psql/sm"
-	"github.com/stephenafamo/bob/drivers/pgx"
+	"github.com/samber/oops"
+	"github.com/uptrace/bun"
 )
 
 type Dashboard struct {
-	db pgx.Pool
+	db bun.IDB
 }
 
-func NewDashboard(db pgx.Pool) *Dashboard {
+func NewDashboard(db bun.IDB) *Dashboard {
 	return &Dashboard{db: db}
 }
 
-func (d *Dashboard) GetFiveLatestProjects(ctx context.Context) (model.ProjectSlice, error) {
-	return model.Projects.Query(
-		sm.Columns("id", "name"),
-		sm.Limit(5),
-		sm.OrderBy("id"),
-	).All(ctx, d.db)
+func (d *Dashboard) GetFiveLatestProjects(ctx context.Context) ([]model.Project, error) {
+	var projects []model.Project
+
+	err := d.db.NewSelect().
+		Model(&projects).
+		Column("id", "name").
+		Limit(5).
+		Order("id DESC").
+		Scan(ctx)
+
+	if err != nil {
+		return nil, oops.In("GetFiveLatestProjects").Wrap(err)
+	}
+
+	return projects, nil
 }
 
-func (d *Dashboard) GetFiveLatestServers(ctx context.Context) (model.ServerSlice, error) {
-	return model.Servers.Query(
-		sm.Columns("id", "name"),
-		sm.Limit(5),
-		sm.OrderBy("id"),
-	).All(ctx, d.db)
+func (d *Dashboard) GetFiveLatestServers(ctx context.Context) ([]model.Server, error) {
+	var servers []model.Server
+
+	err := d.db.NewSelect().
+		Model(&servers).
+		Column("id", "name").
+		Limit(5).
+		Order("id DESC").
+		Scan(ctx)
+
+	if err != nil {
+		return nil, oops.In("GetFiveLatestServers").Wrap(err)
+	}
+
+	return servers, nil
 }

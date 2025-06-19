@@ -19,11 +19,11 @@ var (
 )
 
 type FindSessionQuery interface {
-	FindUserBySession(ctx context.Context, sessionID string) (*model.User, error)
+	FindUserBySession(ctx context.Context, sessionID string) (model.User, error)
 }
 
 type FindSpesificEnvironmentsQuery interface {
-	FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (*model.Environment, error)
+	FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error)
 }
 
 type Middleware struct {

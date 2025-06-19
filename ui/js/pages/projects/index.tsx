@@ -36,7 +36,7 @@ export default function Index({ items, prevId, nextId }: Props) {
     }, [nextId]);
 
     const handleOnClickProject = (id: string) => {
-        router.get(`/projects/${id}/environments`);
+        router.visit(`/projects/${id}/environments`);
     };
 
     return (

@@ -5,29 +5,31 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/aarondl/opt/omit"
 	"github.com/itsbbo/jadel/app/settings"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
 	"github.com/samber/oops"
-	"github.com/stephenafamo/bob/drivers/pgx"
+	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Settings struct {
-	db pgx.Pool
+	db bun.IDB
 }
 
-func NewSettings(db pgx.Pool) *Settings {
+func NewSettings(db bun.IDB) *Settings {
 	return &Settings{
 		db: db,
 	}
 }
 
 func (s *Settings) UpdatePassword(ctx context.Context, param settings.ChangePasswordParam) error {
-	user, err := model.Users.Query(
-		model.SelectWhere.Users.Email.EQ(param.Email),
-	).One(ctx, s.db)
+	var user model.User
+
+	err := s.db.NewSelect().
+		Model(&user).
+		Where("email = ?", param.Email).
+		Scan(ctx)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -43,59 +45,53 @@ func (s *Settings) UpdatePassword(ctx context.Context, param settings.ChangePass
 		return settings.ErrWrongPassword
 	}
 
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return oops.In("begin").With("email", param.Email).Wrap(err)
-	}
+	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		_, err = tx.NewUpdate().
+			Model(&user).
+			Set("password = ?", param.NewPassword).
+			WherePK().
+			Exec(ctx)
 
-	defer tx.Rollback(ctx)
-
-	err = user.Update(ctx, tx, &model.UserSetter{
-		Password: omit.From(param.NewPassword),
+		return err
 	})
+
 	if err != nil {
 		return oops.In("update password").With("email", param.Email).Wrap(err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return oops.In("commit").With("email", param.Email).Wrap(err)
 	}
 
 	return nil
 }
 
 func (s *Settings) UpdateProfile(ctx context.Context, param settings.UpdateProfileParam) error {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return oops.In("begin").With("id", param.User.ID).Wrap(err)
-	}
+	err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		_, err := tx.NewUpdate().
+			Model(&param.User).
+			Set("name = ?", param.Name).
+			Set("email = ?", param.Email).
+			WherePK().
+			Exec(ctx)
 
-	defer tx.Rollback(ctx)
-
-	err = param.User.Update(ctx, tx, &model.UserSetter{
-		Name:  omit.From(param.Name),
-		Email: omit.From(param.Email),
+		return err
 	})
 
-	if err != nil {
-		if model.UserErrors.ErrUniqueUsersEmailKey.Is(err) {
-			return settings.ErrEmailAlreadyTaken
-		}
-
-		return oops.In("update profile").With("id", param.User.ID).Wrap(err)
+	if err == nil {
+		return nil
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return oops.In("commit").With("id", param.User.ID).Wrap(err)
+	if model.IsErrUniqueEmailUser(err) {
+		return settings.ErrEmailAlreadyTaken
 	}
 
-	return nil
+	return oops.In("update profile").With("id", param.User.ID).Wrap(err)
 }
 
 func (s *Settings) DeleteAccount(ctx context.Context, id ulid.ULID, password string) error {
-	user, err := model.FindUser(ctx, s.db, id, "password")
+	var user model.User
+
+	err := s.db.NewSelect().
+		Model(&user).
+		Where("id = ?", id).
+		Scan(ctx)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -111,21 +107,17 @@ func (s *Settings) DeleteAccount(ctx context.Context, id ulid.ULID, password str
 		return settings.ErrWrongPassword
 	}
 
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return oops.In("begin").With("id", user.ID).Wrap(err)
-	}
+	err = s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		_, errTx := tx.NewDelete().
+			Model(&user).
+			WherePK().
+			Exec(ctx)
 
-	defer tx.Rollback(ctx)
+		return errTx
+	})
 
-	err = user.Delete(ctx, tx)
 	if err != nil {
 		return oops.In("delete").With("id", user.ID).Wrap(err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return oops.In("commit").With("id", user.ID).Wrap(err)
 	}
 
 	return nil

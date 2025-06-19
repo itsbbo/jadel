@@ -17,7 +17,7 @@ const (
 	SessionTime    = 3 * time.Hour
 )
 
-func CurrentUser(r *http.Request) *model.User {
+func CurrentUser(r *http.Request) model.User {
 	props := gonertia.PropsFromContext(r.Context())
-	return props[UserKey].(*model.User)
+	return props[UserKey].(model.User)
 }

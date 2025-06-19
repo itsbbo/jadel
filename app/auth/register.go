@@ -31,7 +31,7 @@ type NewUserWithSessionParam struct {
 }
 
 type NewUserWithSessionMutator interface {
-	NewUserWithSession(context.Context, NewUserWithSessionParam) (*model.User, string, error)
+	NewUserWithSession(context.Context, NewUserWithSessionParam) (model.User, string, error)
 }
 
 func (d *Deps) RegisterPage(w http.ResponseWriter, r *http.Request) {

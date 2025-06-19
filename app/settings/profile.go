@@ -25,7 +25,7 @@ type DeleteAccountRequest struct {
 }
 
 type UpdateProfileParam struct {
-	User  *model.User
+	User  model.User
 	Name  string
 	Email string
 }

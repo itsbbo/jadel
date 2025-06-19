@@ -11,7 +11,7 @@ import (
 )
 
 type GetProjectIndexQuery interface {
-	GetProjectIndex(ctx context.Context, param app.PaginationRequest) (model.ProjectSlice, error)
+	GetProjectIndex(ctx context.Context, param app.PaginationRequest) ([]model.Project, error)
 }
 
 func (d *Deps) Index(w http.ResponseWriter, r *http.Request) {

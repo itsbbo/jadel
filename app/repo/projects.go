@@ -6,160 +6,130 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
+	"github.com/guregu/null/v6"
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/app/projects"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
 	"github.com/samber/oops"
-	"github.com/stephenafamo/bob/dialect/psql/sm"
-	"github.com/stephenafamo/bob/drivers/pgx"
+	"github.com/uptrace/bun"
 )
 
 type Project struct {
-	db pgx.Pool
+	db bun.IDB
 }
 
-func NewProject(db pgx.Pool) *Project {
+func NewProject(db bun.IDB) *Project {
 	return &Project{
 		db: db,
 	}
 }
 
-func (p *Project) GetProjectIndex(ctx context.Context, param app.PaginationRequest) (model.ProjectSlice, error) {
-	q := model.Projects.Query(
-		sm.Columns(
-			model.ColumnNames.Projects.ID,
-			model.ColumnNames.Projects.Name,
-			model.ColumnNames.Projects.Description,
-		),
-		model.SelectWhere.Projects.UserID.EQ(param.UserID),
-		sm.Limit(param.Limit),
-	)
+func (p *Project) GetProjectIndex(ctx context.Context, param app.PaginationRequest) ([]model.Project, error) {
+	q := p.db.NewSelect().
+		Column("id", "name", "description").
+		Where("user_id = ?", param.UserID)
 
 	switch {
 	case !param.PrevID.IsZero():
-		q.Apply(
-			model.SelectWhere.Projects.ID.GT(param.PrevID),
-			sm.OrderBy(model.ColumnNames.Projects.ID).Asc(),
-		)
-
+		q = q.Where("id > ?", param.PrevID).Order("id ASC")
 	case !param.NextID.IsZero():
-		q.Apply(
-			model.SelectWhere.Projects.ID.LT(param.NextID),
-			sm.OrderBy(model.ColumnNames.Projects.ID).Desc(),
-		)
-
+		q = q.Where("id < ?", param.NextID).Order("id DESC")
 	default:
-		q.Apply(sm.OrderBy(model.ColumnNames.Projects.ID).Desc())
+		q = q.Order("id DESC")
 	}
 
-	results, err := q.All(ctx, p.db)
+	var projects []model.Project
+	err := q.Model(&projects).Limit(param.Limit).Scan(ctx, &projects)
 	if err != nil {
 		return nil, oops.In("GetProjectIndex").With("param", param).Wrap(err)
 	}
 
 	if !param.PrevID.IsZero() {
-		slices.Reverse(results)
+		slices.Reverse(projects)
 	}
 
-	return results, nil
+	return projects, nil
 }
 
-func (p *Project) CreateProject(ctx context.Context, param projects.CreateProjectParam) (*model.Project, error) {
-	projectSetter := &model.ProjectSetter{
-		ID:          omit.From(ulid.Make()),
-		Name:        omit.From(param.Name),
-		UserID:      omit.From(param.User.ID),
-		Description: omitnull.From(param.Description),
+func (p *Project) CreateProject(ctx context.Context, param projects.CreateProjectParam) (model.Project, error) {
+	project := model.Project{
+		ID:          ulid.Make(),
+		Name:        param.Name,
+		UserID:      param.User.ID,
+		Description: null.StringFrom(param.Description),
 	}
 
-	tx, err := p.db.Begin(ctx)
-	if err != nil {
-		return nil, oops.In("Begin").Wrap(err)
-	}
+	err := p.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		_, err := tx.NewInsert().Model(&project).Exec(ctx)
+		if err != nil {
+			return err
+		}
 
-	defer tx.Rollback(ctx)
+		_, err = tx.NewInsert().Model(&model.Environment{
+			ID:        ulid.Make(),
+			ProjectID: project.ID,
+			Name:      "production",
+		}).Exec(ctx)
 
-	errWrap := oops.
-		With("name", param.Name).
-		With("description", param.Description).
-		With("userID", param.User.ID.String())
-
-	project, err := model.Projects.Insert(projectSetter).One(ctx, tx)
-	if err != nil {
-		return nil, errWrap.In("Projects.Insert").Wrap(err)
-	}
-
-	err = project.InsertEnvironments(ctx, tx, &model.EnvironmentSetter{
-		ID:   omit.From(ulid.Make()),
-		Name: omit.From("production"),
+		return err
 	})
 
 	if err != nil {
-		return nil, errWrap.In("InsertEnvironments").Wrap(err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return nil, errWrap.In("tx.Commit").Wrap(err)
+		return model.Project{}, oops.
+			In("CreateProject").
+			With("name", param.Name).
+			With("description", param.Description).
+			With("userID", param.User.ID.String()).
+			Wrap(err)
 	}
 
 	return project, nil
 }
 
-func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.ULID) (*model.Project, model.EnvironmentSlice, error) {
-	project, err := model.Projects.Query(
-		sm.Columns(model.ColumnNames.Projects.ID, model.ColumnNames.Projects.Name),
-		model.SelectWhere.Projects.UserID.EQ(userID),
-		model.SelectWhere.Projects.ID.EQ(projectID),
-	).One(ctx, p.db)
+func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.ULID) (model.Project, error) {
+	var project model.Project
+
+	err := p.db.NewSelect().
+		Model(&project).
+		Column("id", "name").
+		Relation("Environments").
+		Where("id = ?", projectID).
+		Where("user_id = ?", userID).
+		Order("id DESC").
+		Limit(10).
+		Scan(ctx)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, nil
+			return model.Project{}, projects.ErrProjectNotFound
 		}
 
-		return nil, nil, oops.In("ProjectQuery").With("projectID", projectID.String()).Wrap(err)
+		return model.Project{}, oops.In("ProjectQuery").With("projectID", projectID.String()).Wrap(err)
 	}
 
-	environments, err := project.Environments(
-		sm.Columns(model.ColumnNames.Environments.ID, model.ColumnNames.Environments.Name),
-	).All(ctx, p.db)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return project, nil, nil
-		}
-
-		return nil, nil, oops.In("ProjectEnvironments").With("projectID", projectID.String()).Wrap(err)
-	}
-
-	return project, environments, nil
+	return project, nil
 }
 
-func (p *Project) FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (*model.Environment, error) {
-	project, err := model.Projects.Query().One(ctx, p.db)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, oops.
-				In("FindSpesificEnvironments - model.Projects.Query()").
-				With("userID", userID.String()).
-				With("envID", envID.String()).
-				Wrap(err)
-		}
-	}
+func (p *Project) FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error) {
+	var env model.Environment
 
-	err = project.LoadEnvironments(ctx, p.db, model.SelectWhere.Environments.ID.EQ(envID))
+	_, err := p.db.NewSelect().
+		Model(&env).
+		Column("id", "name").
+		Relation("Project", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Column("id", "name").
+				Where("id = ?", projectID).
+				Where("user_id = ?", userID)
+		}).
+		Where("id = ?", envID).
+		Exec(ctx)
+
 	if err == nil {
-		env := *project.R.Environments[0]
-		copyProject := *project
-		copyProject.R.Environments = nil
-		env.R.Project = &copyProject
-		return &env, nil
+		return env, nil
 	}
 
-	return nil, oops.
+	return env, oops.
 		In("project.LoadEnvironments").
 		With("userID", userID.String()).
 		With("envID", envID.String()).

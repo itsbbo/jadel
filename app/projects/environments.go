@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -17,7 +18,7 @@ var (
 )
 
 type AllEnvironmentsQuery interface {
-	AllEnvironments(ctx context.Context, userID, projectID ulid.ULID) (*model.Project, model.EnvironmentSlice, error)
+	AllEnvironments(ctx context.Context, userID, projectID ulid.ULID) (model.Project, error)
 }
 
 func (d *Deps) Environments(w http.ResponseWriter, r *http.Request) {
@@ -29,11 +30,11 @@ func (d *Deps) Environments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, envs, err := d.repo.AllEnvironments(r.Context(), userID, projectID)
+	project, err := d.repo.AllEnvironments(r.Context(), userID, projectID)
 	if err == nil {
 		d.server.RenderUI(w, r, "projects/environments", gonertia.Props{
 			"project": project,
-			"envs":    envs,
+			"envs":    project.Environments,
 		})
 		return
 	}
@@ -43,5 +44,6 @@ func (d *Deps) Environments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Error("cannot get environments", slog.Any("error", err))
 	d.server.Back(w, d.server.AddInternalErrorMsg(w, r))
 }
