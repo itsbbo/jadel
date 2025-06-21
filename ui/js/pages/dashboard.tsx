@@ -4,14 +4,12 @@ import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/shadcn/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import AppLayout from '@/layouts/app-layout';
-import { useBreadcrumbsStore } from '@/stores/breadcrumbs';
 import { type BreadcrumbItem } from '@/types';
 import { Project, Server as ServerEntity } from '@/types/entity';
 import { Head } from '@inertiajs/react';
 import { FolderOpen, Server } from 'lucide-react';
-import { useEffect } from 'react';
 
-const dashboardBreadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -24,15 +22,8 @@ interface Props {
 }
 
 export default function Dashboard({ projects, servers }: Props) {
-    const { setBreadcrumbs } = useBreadcrumbsStore();
-    
-    // Set breadcrumbs when component mounts
-    useEffect(() => {
-        setBreadcrumbs(dashboardBreadcrumbs);
-    }, [setBreadcrumbs]);
-
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
 
             <main className="space-y-16 px-4 py-6">

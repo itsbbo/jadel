@@ -2,8 +2,16 @@ import Heading from '@/components/heading';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Database, FileText, GitBranch, Github, Key } from 'lucide-react';
-import { ResourceCard } from '../components/resource-card';
+import GitPublic from './components/app-git-public';
+import GithubApp from './components/app-githubapp';
+import PrivateGit from './components/app-private-git';
+import MariaDB from './components/db-mariadb';
+import MySQL from './components/db-mysql';
+import Postgres from './components/db-postgres';
+import Redis from './components/db-redis';
+import DockerCompose from './components/docker-compose';
+import Dockerfile from './components/docker-dockerfile';
+import DockerImage from './components/docker-image';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -12,76 +20,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const applicationResources = [
-    {
-        title: 'Public Repository',
-        description: 'You can deploy any kind of public repositories from the supported git providers.',
-        icon: GitBranch,
-        category: 'Git Based',
-        isPopular: true,
-    },
-    {
-        title: 'Private Repository (with GitHub App)',
-        description: 'You can deploy public & private repositories through your GitHub Apps.',
-        icon: Github,
-        category: 'Git Based',
-    },
-    {
-        title: 'Private Repository (with Deploy Key)',
-        description: 'You can deploy private repositories with a deploy key.',
-        icon: Key,
-        category: 'Git Based',
-    },
-];
+const apps = [GitPublic, GithubApp, PrivateGit];
 
-const dockerResources = [
-    {
-        title: 'Dockerfile',
-        description: 'You can deploy a simple Dockerfile, without Git.',
-        icon: FileText,
-        category: 'Docker Based',
-    },
-    {
-        title: 'Docker Compose Empty',
-        description: 'You can deploy complex application easily with Docker Compose, without Git.',
-        icon: FileText,
-        category: 'Docker Based',
-    },
-    {
-        title: 'Docker Image',
-        description: 'You can deploy an existing Docker Image from any Registry, without Git.',
-        icon: FileText,
-        category: 'Docker Based',
-    },
-];
+const dockers = [Dockerfile, DockerCompose, DockerImage];
 
-const databaseResources = [
-    {
-        title: 'PostgreSQL',
-        description: 'PostgreSQL is an object-relational database known for its robustness, advanced features, and strong standards compliance.',
-        icon: Database,
-        category: 'Database',
-        isPopular: true,
-    },
-    {
-        title: 'MySQL',
-        description: 'MySQL is an open-source relational database management system.',
-        icon: Database,
-        category: 'Database',
-    },
-    {
-        title: 'MariaDB',
-        description: 'MariaDB is a community-developed, commercially supported fork of the MySQL relational database management system.',
-        icon: Database,
-        category: 'Database',
-    },
-    {
-        title: 'Redis',
-        description: 'Redis is a source-available, in-memory storage, used as a distributed, in-memory key-value database, cache and message broker.',
-        icon: Database,
-        category: 'Database',
-    },
-];
+const databases = [Postgres, MySQL, MariaDB, Redis];
 
 export default function CreateResources() {
     return (
@@ -95,14 +38,14 @@ export default function CreateResources() {
                     <Heading className="mb-2" title="Applications" />
                     <h3 className="text-primary mb-4 text-lg font-medium">Git Based</h3>
                     <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                        {applicationResources.map((resource, index) => (
-                            <ResourceCard key={index} {...resource} />
+                        {apps.map((App, index) => (
+                            <App key={index} />
                         ))}
                     </div>
                     <h3 className="text-primary mb-4 text-lg font-medium">Docker Based</h3>
                     <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                        {dockerResources.map((resource, index) => (
-                            <ResourceCard key={index} {...resource} />
+                        {dockers.map((Docker, index) => (
+                            <Docker key={index} />
                         ))}
                     </div>
                 </section>
@@ -110,8 +53,8 @@ export default function CreateResources() {
                 <section>
                     <Heading className="mb-2" title="Databases" />
                     <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                        {databaseResources.map((resource, index) => (
-                            <ResourceCard key={index} {...resource} />
+                        {databases.map((Database, index) => (
+                            <Database key={index} />
                         ))}
                     </div>
                 </section>

@@ -35,7 +35,7 @@ export default function Index({ env }: Props) {
 
             <main className="space-y-8 px-4 py-6">
                 <Heading title="Resources" description={`Resources for ${env.name} environment`} />
-                
+
                 <Button className="cursor-pointer" onClick={() => router.visit(`/projects/${env.project.id}/environments/${env.id}/create`)}>
                     <PlusIcon /> Add
                 </Button>
