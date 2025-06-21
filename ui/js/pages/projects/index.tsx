@@ -7,7 +7,7 @@ import { BreadcrumbItem, Pagination } from '@/types';
 import { Project } from '@/types/entity';
 import { Head, router } from '@inertiajs/react';
 import { useMemo } from 'react';
-import AddProjects from './components/add-projects';
+import AddProjects from '@/pages/projects/components/add-projects';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
