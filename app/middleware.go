@@ -21,17 +21,17 @@ type FindSessionQuery interface {
 	FindUserBySession(ctx context.Context, sessionID string) (model.User, error)
 }
 
-type FindSpesificEnvironmentsQuery interface {
-	FindSpesificEnvironments(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error)
+type FindResourcesQuery interface {
+	FindResources(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error)
 }
 
 type Middleware struct {
 	server *Server
 	auth   FindSessionQuery
-	env    FindSpesificEnvironmentsQuery
+	env    FindResourcesQuery
 }
 
-func NewMiddleware(server *Server, auth FindSessionQuery, env FindSpesificEnvironmentsQuery) *Middleware {
+func NewMiddleware(server *Server, auth FindSessionQuery, env FindResourcesQuery) *Middleware {
 	return &Middleware{
 		server: server,
 		auth:   auth,
@@ -68,7 +68,6 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 
 		slog.Error("Cannot check auth user", slog.Any("error", err))
 		m.server.RenderUI(w, r, "error/internal-server-error", NoUIProps)
-		return
 	})
 }
 
@@ -87,11 +86,10 @@ func (m *Middleware) RedirectIfAuthenticated(next http.Handler) http.Handler {
 		}
 
 		m.server.RedirectTo(w, r, "/dashboard")
-		return
 	})
 }
 
-func (m *Middleware) LoadEnvironments(next http.Handler) http.Handler {
+func (m *Middleware) LoadResources(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		projectID, err := ulid.Parse(chi.URLParam(r, "project"))
 		if err != nil {
@@ -107,9 +105,9 @@ func (m *Middleware) LoadEnvironments(next http.Handler) http.Handler {
 
 		user := CurrentUser(r)
 
-		env, err := m.env.FindSpesificEnvironments(r.Context(), user.ID, projectID, envID)
+		env, err := m.env.FindResources(r.Context(), user.ID, projectID, envID)
 		if err == nil {
-			ctx := context.WithValue(r.Context(), EnvKey, env)
+			ctx := gonertia.SetProp(r.Context(), EnvKey, env)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -121,6 +119,5 @@ func (m *Middleware) LoadEnvironments(next http.Handler) http.Handler {
 
 		slog.Error("cannot retrieved environments", slog.Any("error", err))
 		m.server.Back(w, m.server.AddInternalErrorMsg(w, r))
-		return
 	})
 }

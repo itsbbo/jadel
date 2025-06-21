@@ -13,7 +13,7 @@ interface ResourceCardProps {
 
 export function ResourceCard({ title, description, icon: Icon, category, isPopular = false, onClick }: ResourceCardProps) {
     return (
-        <Card onClick={onClick}>
+        <Card onClick={onClick} className='cursor-pointer'>
             <CardContent>
                 <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">

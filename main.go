@@ -45,7 +45,7 @@ func main() {
 	dashboard.New(server, middleware, dashboardRepo).InitRoutes()
 	settings.New(server, middleware, settingsRepo).InitRoutes()
 	projects.New(server, middleware, projectsRepo).InitRoutes()
-	resources.New(server, middleware).InitRoutes()
+	resources.New(server, middleware, projectsRepo).InitRoutes()
 
 	if config.Server.Debug {
 		server.PrintRoutes()

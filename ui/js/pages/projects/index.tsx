@@ -55,10 +55,7 @@ export default function Index({ items, prevId, nextId }: Props) {
                         <Else>
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {items?.map((project) => (
-                                    <Card
-                                        key={project.id}
-                                        onClick={() => handleOnClickProject(project.id)}
-                                    >
+                                    <Card key={project.id} onClick={() => handleOnClickProject(project.id)}>
                                         <CardHeader>
                                             <CardTitle className="text-lg">{project.name}</CardTitle>
                                         </CardHeader>
