@@ -1,4 +1,4 @@
-package servers
+package privatekey
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -6,8 +6,8 @@ import (
 )
 
 type Repository interface {
-	GetServerIndexQuery
-	CreateServerMutator
+	GetPrivateKeyIndexQuery
+	CreatePrivateKeyMutator
 }
 
 type Deps struct {
@@ -25,7 +25,7 @@ func New(server *app.Server, middleware *app.Middleware, repo Repository) *Deps 
 }
 
 func (d *Deps) InitRoutes() {
-	d.server.Route("/servers", func(r chi.Router) {
+	d.server.Route("/private-keys", func(r chi.Router) {
 		r.Use(d.middleware.Auth)
 
 		r.Get("/", d.Index)

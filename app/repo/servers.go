@@ -5,7 +5,9 @@ import (
 	"slices"
 
 	"github.com/itsbbo/jadel/app"
+	"github.com/itsbbo/jadel/app/servers"
 	"github.com/itsbbo/jadel/model"
+	"github.com/oklog/ulid/v2"
 	"github.com/samber/oops"
 	"github.com/uptrace/bun"
 )
@@ -43,4 +45,30 @@ func (s *Server) GetServerIndex(ctx context.Context, param app.PaginationRequest
 	}
 
 	return servers, nil
+}
+
+func (s *Server) CreateServer(ctx context.Context, userID ulid.ULID, r servers.CreateServerRequest) (model.Server, error) {
+	server := model.Server{
+		ID:           ulid.Make(),
+		UserID:       userID,
+		Name:         r.Name,
+		Description:  r.Description,
+		IP:           r.IP,
+		Port:         r.Port,
+		PrivateKeyID: ulid.MustParse(r.PrivateKeyID),
+	}
+
+	_, err := s.db.NewInsert().
+		Model(&server).
+		Exec(ctx)
+
+	if err == nil {
+		return server, nil
+	}
+
+	if model.IsErrConstrainPrivateKeyInServer(err) {
+		return model.Server{}, servers.ErrUnknownPrivateKey
+	}
+
+	return model.Server{}, oops.In("CreateServer").With("server", server).With("userID", userID.String()).Wrap(err)
 }

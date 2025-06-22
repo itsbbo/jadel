@@ -61,6 +61,16 @@ export interface Database {
     port_mappings?: Record<string, string>;
     custom_config?: Record<string, any>;
     metadata?: any;
-    created_at: Date;
-    updated_at: Date;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PrivateKey {
+    id: string;
+    name: string;
+    description?: string;
+    public_key: string;
+    private_key: string;
+    created_at: string;
+    updated_at: string;
 }

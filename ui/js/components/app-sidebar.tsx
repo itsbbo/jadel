@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Keys & Tokens',
-        href: '/security/private-key',
+        href: '/private-keys',
         icon: Key,
     },
     {

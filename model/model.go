@@ -50,8 +50,8 @@ type PrivateKey struct {
 	Name          string      `bun:"name"               json:"name"`
 	UserID        ulid.ULID   `bun:"user_id"            json:"user_id"`
 	Description   null.String `bun:"description"        json:"description"`
+	PublicKey     string      `bun:"public_key"         json:"public_key"`
 	PrivateKey    string      `bun:"private_key"        json:"private_key"`
-	IsGitRelated  bool        `bun:"is_git_related"     json:"is_git_related"`
 	Timestamp
 }
 
