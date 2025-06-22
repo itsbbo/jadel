@@ -8,6 +8,7 @@ import (
 type Repository interface {
 	GetPrivateKeyIndexQuery
 	CreatePrivateKeyMutator
+	GetAllPrivateKeysQuery
 }
 
 type Deps struct {
@@ -29,6 +30,7 @@ func (d *Deps) InitRoutes() {
 		r.Use(d.middleware.Auth)
 
 		r.Get("/", d.Index)
+		r.Get("/all/json", d.All)
 		r.Post("/", d.Create)
 	})
 }

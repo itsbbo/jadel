@@ -1,13 +1,12 @@
-import InputError from "@/components/input-error";
-import { DialogFooter } from "@/components/shadcn/dialog";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
-import { useForm } from "@inertiajs/react";
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose } from "@/components/shadcn/dialog";
-import { Label } from "@/components/shadcn/label";
-import { PlusIcon } from "lucide-react";
-import { FormEventHandler } from "react";
-import { Textarea } from "@/components/shadcn/textarea";
+import InputError from '@/components/input-error';
+import { Button } from '@/components/shadcn/button';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
+import { Textarea } from '@/components/shadcn/textarea';
+import { useForm } from '@inertiajs/react';
+import { PlusIcon } from 'lucide-react';
+import { FormEventHandler } from 'react';
 
 export default function AddPrivateKey() {
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm({
@@ -73,9 +72,7 @@ export default function AddPrivateKey() {
                         </section>
 
                         <section className="space-y-2">
-                            <Label className="text-sm font-medium">
-                                Private Key
-                            </Label>
+                            <Label className="text-sm font-medium">Private Key</Label>
                             <Textarea
                                 id="privateKey"
                                 value={data.privateKey}
@@ -86,17 +83,10 @@ export default function AddPrivateKey() {
                         </section>
 
                         <section className="space-y-2">
-                            <Label className="text-sm font-medium">
-                                Public Key
-                            </Label>
-                            <Textarea
-                                id="publicKey"
-                                value={data.publicKey}
-                                onChange={(e) => setData('publicKey', e.target.value)}
-                            />
+                            <Label className="text-sm font-medium">Public Key</Label>
+                            <Textarea id="publicKey" value={data.publicKey} onChange={(e) => setData('publicKey', e.target.value)} />
                             <InputError message={errors.publicKey} />
                         </section>
-
 
                         <DialogFooter className="gap-2">
                             <DialogClose asChild>

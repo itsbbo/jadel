@@ -1,12 +1,12 @@
 package app
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/Oudwins/zog"
-	"github.com/Oudwins/zog/zhttp"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/itsbbo/jadel/gonertia"
@@ -34,7 +34,14 @@ func (s *Server) AddStaticAssetsRoute() {
 }
 
 func (s *Server) Bind(w http.ResponseWriter, r *http.Request, schema *zog.StructSchema, target any) (*http.Request, bool) {
-	errMap := schema.Parse(zhttp.Request(r), target)
+	defer r.Body.Close()
+
+	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		slog.Error("cannot parse json", slog.Any("error", err))
+		return nil, false
+	}
+
+	errMap := schema.Validate(target)
 	if errMap == nil {
 		return nil, true
 	}

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/guregu/null/v6"
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/model"
 	"github.com/oklog/ulid/v2"
@@ -22,12 +21,12 @@ type CreateServerMutator interface {
 }
 
 type CreateServerRequest struct {
-	Name         string      `json:"name"`
-	Description  null.String `json:"description"`
-	IP           string      `json:"ip"`
-	Port         int         `json:"port"`
-	User         string      `json:"user"`
-	PrivateKeyID string      `json:"privateKeyId"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	IP           string `json:"ip"`
+	Port         int    `json:"port"`
+	User         string `json:"user"`
+	PrivateKeyID string `json:"privateKeyId"`
 }
 
 func (d *Deps) Create(w http.ResponseWriter, r *http.Request) {

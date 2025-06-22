@@ -70,3 +70,19 @@ func (p *PrivateKey) CreatePrivateKey(ctx context.Context, userID ulid.ULID, r p
 
 	return privateKey, nil
 }
+
+func (p *PrivateKey) GetAllPrivateKeys(ctx context.Context, userID ulid.ULID) ([]model.PrivateKey, error) {
+	var privateKeys []model.PrivateKey
+
+	err := p.db.NewSelect().
+		Column("id", "name").
+		Model(&privateKeys).
+		Where("user_id = ?", userID).
+		Scan(ctx)
+		
+	if err != nil {
+		return nil, oops.In("GetAllPrivateKeys").With("userID", userID.String()).Wrap(err)
+	}
+
+	return privateKeys, nil
+}

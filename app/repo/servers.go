@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/guregu/null/v6"
 	"github.com/itsbbo/jadel/app"
 	"github.com/itsbbo/jadel/app/servers"
 	"github.com/itsbbo/jadel/model"
@@ -52,7 +53,7 @@ func (s *Server) CreateServer(ctx context.Context, userID ulid.ULID, r servers.C
 		ID:           ulid.Make(),
 		UserID:       userID,
 		Name:         r.Name,
-		Description:  r.Description,
+		Description:  null.StringFrom(r.Description),
 		IP:           r.IP,
 		Port:         r.Port,
 		PrivateKeyID: ulid.MustParse(r.PrivateKeyID),

@@ -8,21 +8,21 @@ import (
 )
 
 var createServerSchema = z.Struct(z.Shape{
-	"name": z.String().
+	"Name": z.String().
 		Required(z.Message("Name is required")).
 		Max(255, z.Message("Name max length is 255 characters")),
-	"description": z.String().
+	"Description": z.String().
 		Optional().
 		Max(255, z.Message("Description max length is 255 characters")),
-	"ip": z.String().
+	"IP": z.String().
 		Required(z.Message("IP is required")).
 		TestFunc(
 			func(val *string, ctx z.Ctx) bool { return net.ParseIP(*val) != nil },
 			z.Message("IP is not valid"),
 		),
-	"port": z.Int().Required(z.Message("Port is required")),
-	"user": z.String().Required(z.Message("User is required")),
-	"private_key_id": z.String().
+	"Port": z.Int().Required(z.Message("Port is required")),
+	"User": z.String().Required(z.Message("User is required")),
+	"PrivateKeyID": z.String().
 		Required(z.Message("Private key ID is required")).
 		TestFunc(
 			func(val *string, ctx z.Ctx) bool {
