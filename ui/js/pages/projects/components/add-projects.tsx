@@ -48,7 +48,6 @@ export default function AddProjects() {
                     <form className="space-y-6" onSubmit={createProject}>
                         <div className="grid gap-2">
                             <Label className="sr-only">Name</Label>
-
                             <Input
                                 id="name"
                                 type="text"

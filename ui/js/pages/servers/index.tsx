@@ -3,25 +3,25 @@ import Heading from '@/components/heading';
 import PaginationControls from '@/components/pagination-controls';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import AppLayout from '@/layouts/app-layout';
-import AddProjects from '@/pages/projects/components/add-projects';
 import { BreadcrumbItem, Pagination } from '@/types';
-import { Project } from '@/types/entity';
+import { Server } from '@/types/entity';
 import { Head, router } from '@inertiajs/react';
 import { useMemo } from 'react';
+import AddServer from './components/add-server';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Projects',
-        href: '/projects',
+        title: 'Server',
+        href: '/servers',
     },
 ];
 
-interface Props extends Pagination<Project> {}
+interface Props extends Pagination<Server> {}
 
 export default function Index({ items, prevId, nextId }: Props) {
     const prevPageURL = useMemo(() => {
         if (prevId) {
-            return `/projects?prevId=${prevId}`;
+            return `/servers?prevId=${prevId}`;
         }
 
         return '';
@@ -29,33 +29,33 @@ export default function Index({ items, prevId, nextId }: Props) {
 
     const nextPageURL = useMemo(() => {
         if (nextId) {
-            return `/projects?nextId=${nextId}`;
+            return `/servers?nextId=${nextId}`;
         }
 
         return '';
     }, [nextId]);
 
-    const handleOnClickProject = (id: string) => {
-        router.visit(`/projects/${id}/environments`);
+    const handleOnClickServer = (id: string) => {
+        router.visit(`/servers/${id}`);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Projects" />
+            <Head title="Servers" />
 
             <main className="space-y-16 px-4 py-6">
-                <Heading title="Projects" description="All your projects are here." />
+                <Heading title="Servers" description="All your servers are here." />
 
                 <section className="space-y-4">
                     <div>
-                        <AddProjects />
+                        <AddServer />
                     </div>
                     <If condition={(items?.length ?? 0) === 0}>
-                        <small className="text-sm leading-none font-medium">No projects yet</small>
+                        <small className="text-sm leading-none font-medium">No servers yet</small>
                         <Else>
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {items?.map((project) => (
-                                    <Card key={project.id} onClick={() => handleOnClickProject(project.id)}>
+                                    <Card key={project.id} onClick={() => handleOnClickServer(project.id)}>
                                         <CardHeader>
                                             <CardTitle className="text-lg">{project.name}</CardTitle>
                                         </CardHeader>

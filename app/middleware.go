@@ -21,17 +21,17 @@ type FindSessionQuery interface {
 	FindUserBySession(ctx context.Context, sessionID string) (model.User, error)
 }
 
-type FindResourcesQuery interface {
-	FindResources(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error)
+type FindResourcesGeneralQuery interface {
+	FindResourcesGeneral(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error)
 }
 
 type Middleware struct {
 	server *Server
 	auth   FindSessionQuery
-	env    FindResourcesQuery
+	env    FindResourcesGeneralQuery
 }
 
-func NewMiddleware(server *Server, auth FindSessionQuery, env FindResourcesQuery) *Middleware {
+func NewMiddleware(server *Server, auth FindSessionQuery, env FindResourcesGeneralQuery) *Middleware {
 	return &Middleware{
 		server: server,
 		auth:   auth,
@@ -105,7 +105,7 @@ func (m *Middleware) LoadResources(next http.Handler) http.Handler {
 
 		user := CurrentUser(r)
 
-		env, err := m.env.FindResources(r.Context(), user.ID, projectID, envID)
+		env, err := m.env.FindResourcesGeneral(r.Context(), user.ID, projectID, envID)
 		if err == nil {
 			ctx := gonertia.SetProp(r.Context(), EnvKey, env)
 			next.ServeHTTP(w, r.WithContext(ctx))

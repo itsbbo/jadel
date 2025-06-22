@@ -14,10 +14,15 @@ const (
 	SessionKey     = "jadel_session"
 	UserKey        = "user"
 	EnvKey         = "env"
-	SessionTime    = 3 * time.Hour
+	SessionTime    = 12 * time.Hour
 )
 
 func CurrentUser(r *http.Request) model.User {
 	props := gonertia.PropsFromContext(r.Context())
 	return props[UserKey].(model.User)
+}
+
+func CurrentEnv(r *http.Request) model.Environment {
+	props := gonertia.PropsFromContext(r.Context())
+	return props[EnvKey].(model.Environment)
 }

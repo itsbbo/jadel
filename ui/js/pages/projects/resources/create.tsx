@@ -1,6 +1,7 @@
 import Heading from '@/components/heading';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
+import { Environment } from '@/types/entity';
 import { Head } from '@inertiajs/react';
 import GitPublic from './components/app-git-public';
 import GithubApp from './components/app-githubapp';
@@ -13,20 +14,36 @@ import DockerCompose from './components/docker-compose';
 import Dockerfile from './components/docker-dockerfile';
 import DockerImage from './components/docker-image';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Projects',
-        href: '/projects',
-    },
-];
-
 const apps = [GitPublic, GithubApp, PrivateGit];
 
 const dockers = [Dockerfile, DockerCompose, DockerImage];
 
 const databases = [Postgres, MySQL, MariaDB, Redis];
 
-export default function CreateResources() {
+interface Props {
+    env: Environment;
+}
+
+export default function CreateResources({ env }: Props) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Projects',
+            href: '/projects',
+        },
+        {
+            title: env.project.name,
+            href: `/projects/${env.project.id}/environments`,
+        },
+        {
+            title: env.name,
+            href: `/projects/${env.project.id}/environments/${env.id}`,
+        },
+        {
+            title: 'Create',
+            href: `/projects/${env.project.id}/environments/${env.id}/create`,
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="New Resources" />
@@ -39,7 +56,7 @@ export default function CreateResources() {
                     <h3 className="text-primary mb-4 text-lg font-medium">Git Based</h3>
                     <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-3">
                         {apps.map((App, index) => (
-                            <App key={index} />
+                            <App key={index} env={env} />
                         ))}
                     </div>
                     <h3 className="text-primary mb-4 text-lg font-medium">Docker Based</h3>

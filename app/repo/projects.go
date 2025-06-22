@@ -111,7 +111,7 @@ func (p *Project) AllEnvironments(ctx context.Context, userID, projectID ulid.UL
 	return project, nil
 }
 
-func (p *Project) FindResources(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error) {
+func (p *Project) FindResourcesGeneral(ctx context.Context, userID, projectID, envID ulid.ULID) (model.Environment, error) {
 	var env model.Environment
 
 	err := p.db.NewSelect().
