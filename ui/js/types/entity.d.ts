@@ -3,31 +3,31 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Project {
     id: string;
     name: string;
     description?: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Server {
     id: string;
     name: string;
     description?: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Environment {
     id: string;
     name: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
     project: Project;
     applications: Application[];
     databases: Database[];
@@ -35,42 +35,42 @@ export interface Environment {
 
 export interface Application {
     id: string;
-    environment_id: string;
+    environmentId: string;
     name: string;
     description?: string;
-    build_tool: string;
+    buildTool: string;
     domain: string;
-    enable_https: boolean;
-    pre_deployment_script?: string;
-    post_deployment_script?: string;
-    port_mappings?: Record<string, string>;
+    enableHttps: boolean;
+    preDeploymentScript?: string;
+    postDeploymentScript?: string;
+    portMappings?: Record<string, string>;
     metadata?: Record<string, any>;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Database {
     id: string;
-    environment_id: string;
+    environmentId: string;
     database_type: string;
     name: string;
     description?: string;
     image: string;
     username: string;
     password?: string;
-    port_mappings?: Record<string, string>;
-    custom_config?: Record<string, any>;
+    portMappings?: Record<string, string>;
+    customConfig?: Record<string, any>;
     metadata?: any;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface PrivateKey {
     id: string;
     name: string;
     description?: string;
-    public_key: string;
-    private_key: string;
-    created_at: string;
-    updated_at: string;
+    publicKey: string;
+    privateKey: string;
+    createdAt: string;
+    updatedAt: string;
 }

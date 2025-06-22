@@ -73,7 +73,6 @@ func (d *Deps) ChangeProfile(w http.ResponseWriter, r *http.Request) {
 
 	slog.Error("Error updating profile", slog.Any("error", err))
 	d.ProfilePage(w, d.server.AddInternalErrorMsg(w, r))
-	return
 }
 
 func (d *Deps) DeleteAccount(w http.ResponseWriter, r *http.Request) {

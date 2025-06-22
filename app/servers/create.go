@@ -27,7 +27,7 @@ type CreateServerRequest struct {
 	IP           string      `json:"ip"`
 	Port         int         `json:"port"`
 	User         string      `json:"user"`
-	PrivateKeyID string      `json:"private_key_id"`
+	PrivateKeyID string      `json:"privateKeyId"`
 }
 
 func (d *Deps) Create(w http.ResponseWriter, r *http.Request) {
