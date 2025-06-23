@@ -3,14 +3,14 @@ import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
 import { Input } from '@/components/shadcn/input';
 import { Label } from '@/components/shadcn/label';
-import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from '@/components/shadcn/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
 import { PrivateKey } from '@/types/entity';
 import { useForm } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
 export default function AddServer() {
-    const [privateKeys, setPrivateKeys] = useState<PrivateKey[]>([])
+    const [privateKeys, setPrivateKeys] = useState<PrivateKey[]>([]);
 
     const { data, setData, post, processing, errors, setError, clearErrors, reset } = useForm({
         name: '',
@@ -23,15 +23,15 @@ export default function AddServer() {
 
     useEffect(() => {
         fetch('/private-keys/all/json')
-            .then(res => res.json())
-            .then(data => setPrivateKeys(data))
-            .catch(_ => setError('privateKeyId', "Cannot get your private keys. Try again later."))
-    }, [])
+            .then((res) => res.json())
+            .then((data) => setPrivateKeys(data))
+            .catch((_) => setError('privateKeyId', 'Cannot get your private keys. Try again later.'));
+    }, []);
 
     const createServer: FormEventHandler = (e) => {
         e.preventDefault();
 
-        console.log(data)
+        console.log(data);
 
         post('/servers', {
             preserveScroll: true,
@@ -119,16 +119,16 @@ export default function AddServer() {
                         </section>
 
                         <section className="space-y-2">
-                            <Label className="text-sm font-medium">
-                                Private Key
-                            </Label>
+                            <Label className="text-sm font-medium">Private Key</Label>
                             <Select value={data.privateKeyId} onValueChange={(e) => setData('privateKeyId', e)}>
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select private key" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {privateKeys.map(key => (
-                                        <SelectItem key={key.id} value={key.id}>{key.name}</SelectItem>
+                                    {privateKeys.map((key) => (
+                                        <SelectItem key={key.id} value={key.id}>
+                                            {key.name}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

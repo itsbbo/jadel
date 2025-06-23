@@ -1,6 +1,8 @@
 package servers
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/itsbbo/jadel/app"
 )
@@ -30,5 +32,10 @@ func (d *Deps) InitRoutes() {
 
 		r.Get("/", d.Index)
 		r.Post("/", d.Create)
+		r.Get("/terminal", d.Experiment)
 	})
+}
+
+func (d *Deps) Experiment(w http.ResponseWriter, r *http.Request) {
+	d.server.RenderUI(w, r, "servers/terminal", app.NoUIProps)
 }
