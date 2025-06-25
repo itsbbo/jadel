@@ -9,10 +9,17 @@ import (
 	"github.com/Oudwins/zog"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/websocket"
 	"github.com/itsbbo/jadel/gonertia"
 )
 
 var NoUIProps = gonertia.Props{}
+
+var WsUpgrader = websocket.Upgrader{
+	ReadBufferSize:    4096,
+	WriteBufferSize:   1024,
+	EnableCompression: true,
+}
 
 type Server struct {
 	*chi.Mux
